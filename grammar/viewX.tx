@@ -1,16 +1,16 @@
 ViewXModel:
-    imports+=Import
+    tx_import=Import
     // support wildcard * and separator ;
     apply_to=ApplyTo
     views+=ClassView
 ;
 
 Import:
-    'import' model=ID 'from' path=PathRegEx
+    'tximport' model=ID 'from' path=PathRegEx
 ;
 
 PathRegEx:
-    /"(\w|\.|[-])+"/
+    /"\.?(\w|\.\.|\/|[-])+(\.tx)?"/
 ;
 
 ApplyTo:

@@ -15,14 +15,20 @@ export function activate(context: vscode.ExtensionContext) {
 
     let disposables = [];
 
-    // The command has been defined in the package.json file
-    // Now provide the implementation of the command with  registerCommand
-    // The commandId parameter must match the command field in package.json
-    disposables.push(vscode.commands.registerCommand('viewx.sayHello', () => {
-        // The code you place here will be executed every time your command is executed
+    let viewXExtension = new ViewXExtension();
 
-        // Display a message box to the user
-        vscode.window.showInformationMessage('Hello World!');
+    disposables.push(vscode.commands.registerCommand('viewx.setActiveModel', () => {
+        let currentModel = vscode.window.activeTextEditor.document.uri.fsPath;
+        if (currentModel.endsWith('.vx')) {
+            viewXExtension.activeViewModel = currentModel;
+            vscode.window.showInformationMessage('Current viewX model set as active successfully!');
+        }
+        else {
+            vscode.window.showErrorMessage('Currently active document is not a valid viewX model!');
+        }
+        // let testPreview = vscode.Uri.parse('file:///D:/Programiranje/MasterRad/samples/textx-vscode/viewX/graph_preview/preview.html');
+        let testPreview = vscode.Uri.parse('file:///D:/Programiranje/MasterRad/viewx-vscode/graph_preview/preview.html');
+        vscode.commands.executeCommand('markdown.showPreviewToSide', testPreview);
     }));
 
     disposables.push(vscode.commands.registerCommand('viewx.viewModel', () => {
@@ -39,19 +45,21 @@ export function activate(context: vscode.ExtensionContext) {
         console.log(vscode.window.activeTextEditor.document.fileName);
         console.log(vscode.window.activeTextEditor.document.uri.fsPath);
 
+        let currentModel = vscode.window.activeTextEditor.document.uri.fsPath;
+
         let options = {
             mode: 'text',
             pythonPath: 'C:/Users/DaneX/VEnvs/viewX/Scripts/python',
             // pythonOptions: ['-u'],
             // scriptPath: 'path/to/my/scripts',
-            args: ['value1', 'value2', 'value3']
+            args: [viewXExtension.activeViewModel, currentModel, 'value3']
         };
 
         //let pyInterpreter = vscode.Uri.parse('file:///D:/Programiranje/MasterRad/viewx-vscode/src/viewx_interpreter.py');
         let pyInterpreter = 'D:/Programiranje/MasterRad/viewx-vscode/src/viewx_interpreter.py';
 
         pythonShell.run(pyInterpreter, options, function (err, results) {
-             if (err) throw err;
+            // if (err) throw err;
             // results is an array consisting of messages collected during execution
             console.log('results: ' + results);
         });
@@ -67,4 +75,11 @@ export function activate(context: vscode.ExtensionContext) {
 
 // this method is called when your extension is deactivated
 export function deactivate() {
+}
+
+class ViewXExtension {
+    activeViewModel: string;
+
+    constructor() {
+    }
 }
