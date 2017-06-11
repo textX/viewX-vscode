@@ -1,0 +1,103 @@
+
+    digraph xtext {
+    fontname = "Bitstream Vera Sans"
+    fontsize = 8
+    node[
+        shape=record,
+        style=filled,
+        fillcolor=aliceblue
+    ]
+    nodesep = 0.3
+    edge[dir=black,arrowtail=empty]
+
+
+46227976 -> 46228448[arrowtail=diamond, dir=both, headlabel="imports 1..*"]
+46227976 -> 46229392[arrowtail=diamond, dir=both, headlabel="apply_to "]
+46227976 -> 46229864[arrowtail=diamond, dir=both, headlabel="views 1..*"]
+46227976[ label="{ViewXModel|}"]
+
+46228448[ label="{Import|+model:ID\l+path:PathRegEx\l}"]
+
+46228920[ label="{PathRegEx|\"(\\w\|\\.\|[-])+\"}"]
+
+46229392[ label="{ApplyTo|+regex:STRING\l}"]
+
+46229864 -> 46229864[headlabel="parentView "]
+46229864 -> 46230808[arrowtail=diamond, dir=both, headlabel="properties 1..*"]
+46229864[ label="{ClassView|+name:ID\l+shape:Shape\l}"]
+
+46230336[ label="{Shape|Graph\|State\|Circle\|Ellipse\|Rectangle\|Line}"]
+
+46230808[ label="{*ViewProperty|}"]
+46230808 -> 46497840 [dir=back]
+46230808 -> 46527456 [dir=back]
+46230808 -> 46528400 [dir=back]
+
+46497840[ label="{*ShapeProperty|}"]
+46497840 -> 46498312 [dir=back]
+46497840 -> 46499256 [dir=back]
+46497840 -> 46526512 [dir=back]
+
+46498312[ label="{LayoutProperty|+layout:Layout\l}"]
+
+46498784[ label="{Layout|vertical\|horizontal}"]
+
+46499256 -> 46499728[arrowtail=diamond, dir=both, headlabel="background "]
+46499256[ label="{BackgroundProperty|}"]
+
+46499728[ label="{*Background|}"]
+46499728 -> 46500200 [dir=back]
+46499728 -> 46501144 [dir=back]
+
+46500200[ label="{ColorFn|+color:Color\l}"]
+
+46500672[ label="{Color|white\|black\|red\|green\|blue\|yellow\|orange\|#[0-9a-fA-F]\{6\}}"]
+
+46501144[ label="{ImageFn|+image:PathRegEx\l}"]
+
+46526512 -> 46526984[arrowtail=diamond, dir=both, headlabel="stroke "]
+46526512[ label="{StrokeProperty|}"]
+
+46526984[ label="{Stroke|+width:INT\l+color:Color\l}"]
+
+46527456 -> 46527928[arrowtail=diamond, dir=both, headlabel="label "]
+46527456 -> 46497840[arrowtail=diamond, dir=both, headlabel="labelProperties 1..*"]
+46527456[ label="{LabelProperty|}"]
+
+46527928 -> 46229864[headlabel="class "]
+46527928[ label="{Label|+classProperty:ID\l}"]
+
+46528400[ label="{*LineProperties|}"]
+46528400 -> 46528872 [dir=back]
+46528400 -> 46529344 [dir=back]
+
+46528872 -> 46229864[headlabel="class "]
+46528872[ label="{LineFromProperty|+classProperty:ID\l}"]
+
+46529344 -> 46229864[headlabel="class "]
+46529344[ label="{LineToProperty|+classProperty:ID\l}"]
+
+46529816[ label="{Comment|\\/\\/.*$}"]
+
+46183392[ label="{ID|}"]
+
+46183864[ label="{STRING|}"]
+
+46184336[ label="{BOOL|}"]
+
+46184808[ label="{INT|}"]
+
+46185280[ label="{FLOAT|}"]
+
+46185752[ label="{NUMBER|}"]
+46185752 -> 46185280 [dir=back]
+46185752 -> 46184808 [dir=back]
+
+46227504[ label="{BASETYPE|}"]
+46227504 -> 46185752 [dir=back]
+46227504 -> 46184336 [dir=back]
+46227504 -> 46183392 [dir=back]
+46227504 -> 46183864 [dir=back]
+
+
+}

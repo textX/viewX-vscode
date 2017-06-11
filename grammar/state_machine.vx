@@ -1,0 +1,37 @@
+import StateMachine from "state_machine"
+
+apply to "*.sm;state*.*"
+
+view StateMachine as State
+{
+    layout: horizontal
+    background: color(white)
+    stroke: 2 black
+}
+
+view State as Rectangle
+{
+    layout: vertical
+    background: color(blue)
+    stroke: 1 yellow
+    label: State.name
+    {
+        layout: horizontal
+        background: color(white)
+        stroke: 2 black
+    }
+}
+
+view Event as Circle inside State
+{
+    background: color(green)
+    label: Event.name
+}
+
+view Transition as Line
+{
+    layout: horizontal
+    stroke: 3 red
+    start: Transition.event
+    end: Transition.to_state
+}

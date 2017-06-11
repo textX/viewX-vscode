@@ -1,0 +1,95 @@
+ViewXModel:
+    imports+=Import
+    // support wildcard * and separator ;
+    apply_to=ApplyTo
+    views+=ClassView
+;
+
+Import:
+    'import' model=ID 'from' path=PathRegEx
+;
+
+PathRegEx:
+    /"(\w|\.|[-])+"/
+;
+
+ApplyTo:
+    'apply' 'to' regex=/"((\w|\*(?!\*))+\.(\w|\*(?!\*))+)(;(\w|\*(?!\*))+\.(\w|\*(?!\*))+)*"/
+;
+
+ClassView:
+    'view' name=ID 'as' shape=Shape ('inside' parentView=[ClassView])?
+    ('{' properties+=ViewProperty '}')?
+;
+
+Shape:
+    'Graph' | 'State' | 'Circle' | 'Ellipse' | 'Rectangle' | 'Line'
+;
+
+ViewProperty:
+    ShapeProperty | LabelProperty | LineProperties
+;
+
+ShapeProperty:
+    LayoutProperty | BackgroundProperty | StrokeProperty
+;
+
+LayoutProperty:
+    'layout' ':' layout=Layout
+;
+
+Layout:
+    'vertical' | 'horizontal'
+;
+
+BackgroundProperty:
+    'background' ':' background=Background
+;
+
+Background:
+    ColorFn | ImageFn
+;
+
+ColorFn:
+    'color' '(' color=Color ')'
+;
+
+Color:
+    'white' | 'black' | 'red' | 'green' | 'blue' | 'yellow' | 'orange' | /#[0-9a-fA-F]{6}/
+;
+
+ImageFn:
+    'image' '(' image=PathRegEx ')'
+;
+
+StrokeProperty:
+    'stroke' ':' stroke=Stroke
+;
+
+Stroke:
+    width=INT color=Color
+;
+
+LabelProperty:
+    'label' ':' label=Label ('{' labelProperties+=ShapeProperty '}')?
+;
+
+Label:
+    STRING | (class=[ClassView] '.' classProperty=ID)
+;
+
+LineProperties:
+    LineStartProperty | LineEndProperty
+;
+
+LineStartProperty:
+    'start' ':' class=[ClassView] '.' classProperty=ID // this class property needs to be defined here as ClassView
+;
+
+LineEndProperty:
+    'end' ':' class=[ClassView] '.' classProperty=ID
+;
+
+Comment:
+  /\/\/.*$/
+;
