@@ -11,13 +11,18 @@
         "Other"
     ],
     "activationEvents": [
-        "onCommand:extension.sayHello"
+        "onCommand:viewx.sayHello",
+        "onCommand:viewx.viewModel"
     ],
     "main": "./out/src/extension",
     "contributes": {
         "commands": [{
-            "command": "extension.sayHello",
+            "command": "viewx.sayHello",
             "title": "Hello World"
+        },
+        {
+            "command": "viewx.viewModel",
+            "title": "viewX: view model"
         }]
     },
     "scripts": {

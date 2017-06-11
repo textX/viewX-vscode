@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>ViewX Graph Preview</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="css/style.css" rel="stylesheet">
+    <script src='js/cytoscape.min.js'></script>
+</head>
+
+<body>
+    <div id="cy"></div>
+    <script>
+        var cy = cytoscape({
+            container: document.getElementById('cy'),
+            elements: [{
+                    data: {
+                        id: 'a'
+                    }
+                },
+                {
+                    data: {
+                        id: 'b'
+                    }
+                },
+                {
+                    data: {
+                        id: 'ab',
+                        source: 'a',
+                        target: 'b'
+                    }
+                }
+            ],
+            style: [{
+                    selector: 'node',
+                    style: {
+                        'shape': 'hexagon',
+                        'background-color': 'red',
+                        'label': 'data(id)'
+                    }
+                },
+                {
+                    selector: 'edge',
+                    style: {
+                        'width': 3,
+                        'line-color': '#ccc',
+                        'target-arrow-color': '#ccc',
+                        'target-arrow-shape': 'triangle'
+                    }
+                }
+            ],
+            layout: {
+                name: 'grid',
+                rows: 1
+            }
+        });
+    </script>
+</body>
+
+</html>
