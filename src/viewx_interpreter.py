@@ -5,6 +5,7 @@ Module which serves as a viewX model interpreter.
 import sys
 import os
 from textx.metamodel import metamodel_from_file
+import preview_generator
 
 for v in sys.argv[0:]:
     print(v)
@@ -26,15 +27,15 @@ class ViewXInterpreter(object):
     """
     ViewX model interpreter.
     """
-    def __init__(self, model):
-        self.view_model = model
+    def __init__(self, viewmodel):
+        self.view_model = viewmodel
 
-    def interpret(self, model_path, metamodel_path):
+    def interpret(self, model):
         """
         Main interpreting logic.
         """
-        metamodel = metamodel_from_file(metamodel_path)
-        model = metamodel.model_from_file(model_path)
+        preview_generator.generate(view_model, model)
+
         # print(dir(model))
         # print()
         # print(dir(model.__getattribute__('_tx_attrs')))
@@ -103,13 +104,10 @@ if __name__ == '__main__':
         view_meta_model = metamodel_from_file(os.path.join(viewx_grammar_folder, 'viewX.tx'))
         view_model = view_meta_model.model_from_file(sys.argv[1])
 
-        # print(dir(view_model))
-        # print()
-        # print(dir(view_model.tx_import))
-        # print()
-        # print(view_model.tx_import.model)
-        # print(view_model.tx_import.path)
+        metamodel_path = build_path_from_import(sys.argv[1], view_model.tx_import.path)
+        model_path = sys.argv[2]
+        target_metamodel = metamodel_from_file(metamodel_path)
+        target_model = target_metamodel.model_from_file(model_path)
 
         viewx_interpreter = ViewXInterpreter(view_model)
-        import_path = build_path_from_import(sys.argv[1], view_model.tx_import.path)
-        viewx_interpreter.interpret(sys.argv[2], import_path)
+        viewx_interpreter.interpret(target_model)
