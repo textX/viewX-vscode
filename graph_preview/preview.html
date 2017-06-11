@@ -15,20 +15,85 @@
         var cy = cytoscape({
             container: document.getElementById('cy'),
             elements: [{
-                    data: {
-                        id: 'a'
+                    "group": "nodes",
+                    "data": {
+                        "id": "a",
+                        "label": "Gene1"
                     }
                 },
                 {
-                    data: {
-                        id: 'b'
+                    "group": "nodes",
+                    "data": {
+                        "id": "b",
+                        "label": "Gene2"
                     }
                 },
                 {
-                    data: {
-                        id: 'ab',
-                        source: 'a',
-                        target: 'b'
+                    "group": "nodes",
+                    "data": {
+                        "id": "c",
+                        "label": "Gene3"
+                    }
+                },
+                {
+                    "group": "nodes",
+                    "data": {
+                        "id": "d",
+                        "label": "Gene4"
+                    }
+                },
+                {
+                    "group": "nodes",
+                    "data": {
+                        "id": "e",
+                        "label": "Gene5"
+                    }
+                },
+                {
+                    "group": "nodes",
+                    "data": {
+                        "id": "f",
+                        "label": "Gene6"
+                    }
+                },
+                {
+                    "group": "edges",
+                    "data": {
+                        "id": "ab",
+                        "source": "a",
+                        "target": "b"
+                    }
+                },
+                {
+                    "group": "edges",
+                    "data": {
+                        "id": "cd",
+                        "source": "c",
+                        "target": "d"
+                    }
+                },
+                {
+                    "group": "edges",
+                    "data": {
+                        "id": "ef",
+                        "source": "e",
+                        "target": "f"
+                    }
+                },
+                {
+                    "group": "edges",
+                    "data": {
+                        "id": "ac",
+                        "source": "a",
+                        "target": "d"
+                    }
+                },
+                {
+                    "group": "edges",
+                    "data": {
+                        "id": "be",
+                        "source": "b",
+                        "target": "e"
                     }
                 }
             ],
@@ -51,8 +116,7 @@
                 }
             ],
             layout: {
-                name: 'grid',
-                rows: 1
+                name: 'random'
             }
         });
     </script>

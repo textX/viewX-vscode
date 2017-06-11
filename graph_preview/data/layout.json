@@ -1,0 +1,11 @@
+{
+    "name": "circle",
+    "fit": true,
+    "padding": 30,
+    "avoidOverlap": true,
+    "nodeDimensionsIncludeLabels": false,
+    "startAngle": 4.71238898038469,
+    "clockwise": true,
+    "animate": false,
+    "animationDuration": 500
+}

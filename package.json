@@ -11,18 +11,18 @@
         "Other"
     ],
     "activationEvents": [
-        "onCommand:viewx.sayHello",
+        "onCommand:viewx.setActiveModel",
         "onCommand:viewx.viewModel"
     ],
     "main": "./out/src/extension",
     "contributes": {
         "commands": [{
-            "command": "viewx.sayHello",
-            "title": "Hello World"
+            "command": "viewx.setActiveModel",
+            "title": "viewX: Set active viewX model"
         },
         {
             "command": "viewx.viewModel",
-            "title": "viewX: view model"
+            "title": "viewX: View model"
         }]
     },
     "scripts": {
