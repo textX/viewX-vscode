@@ -6,6 +6,7 @@ import sys
 import os
 from textx.metamodel import metamodel_from_file
 import preview_generator
+import cytoscape_helper as cy
 
 for v in sys.argv[0:]:
     print(v)
@@ -29,12 +30,13 @@ class ViewXInterpreter(object):
     """
     def __init__(self, viewmodel):
         self.view_model = viewmodel
+        self.elements = {}
+        self.traversed_types = []
 
     def interpret(self, model):
         """
         Main interpreting logic.
         """
-        preview_generator.generate(view_model, model)
 
         # print(dir(model))
         # print()
@@ -61,15 +63,33 @@ class ViewXInterpreter(object):
 
         print(type(model.__getattribute__('_tx_attrs')))
         print(dir(model.__getattribute__('_tx_attrs').items()))
+        print(dir(view_model.views[0]))
 
         for view in view_model.views:
             print("1. {}".format(view.name))
             # loop over model tx properties
-            for key, value in model.__getattribute__('_tx_attrs').items():
+            self.match_view_within_type(model, view)
+
+
+    def match_view_within_type(self, type, view, clear=True):
+        print()
+        print('Match view within type')
+        print(type.__class__.__name__, view.name, clear)
+        print(self.traversed_types)
+        print()
+        if clear:
+            self.traversed_types.clear()
+        if not self.traversed_types.__contains__(view.name):
+            self.traversed_types.append(view.name)
+            for key, value in type._tx_attrs.items():
                 print("2. {}".format(key))
                 # if defined get the property
                 if value.cont:
-                    attr = model.__getattribute__(key)
+                    attr = type.__getattribute__(key)
+                    # print('++++')
+                    # print(attr)
+                    # print(dir(attr))
+                    # print('+++++++')
                     # if non-empty list
                     if attr.__class__.__name__ == 'list':
                         first = attr[0] if attr.__len__() > 0 else None
@@ -78,10 +98,112 @@ class ViewXInterpreter(object):
                             for item in attr:
                                 # create json
                                 print(item)
+                                self.elements.update(self.build_graph_element(item, view))
                             break
+                        elif first:
+                            print('elif')
+                            # print(first)
+                            # print(dir(first))
+                            # print(first._tx_attrs)
+                            # print(dir(first._tx_attrs))
+                            for key, value in first._tx_attrs.items():
+                                # print(k)
+                                # print(v)
+                                # print(dir(v))
+                                print('*****1')
+                                print(first)
+                                # print(v.cls)
+                                # print(dir(v.cls))
+                                # print(v.cls._tx_type)
+                                # print(v.cls._tx_metamodel)
+                                # print(v.cls._tx_peg_rule)
+                                # print(first.__getattribute__(k))
+                                # print(first.__getattribute__(k).__class__.__name__)
+                                print(attr)
+                                print('..........')
+                                for item in attr:
+                                    item_property = item.__getattribute__(key)
+                                    if item_property.__class__.__name__ == 'list':
+                                        if item_property[0].__class__.__name__ == view.name:
+                                            print('match inside view')
+                                            print(item)
+                                            print(key)
+                                            print(item_property)
+                                            print(item_property[0].__class__.__name__)
+                                            print(',,,,,,,')
+                                            print(item_property[0], view.name)
+                                            self.elements.update(self.build_graph_element(item_property[0], view))
+                                print('*****2')
+                                # print(v.name)
+                                # print(v.ref)
+                                # print('*****3')
+                                print(view.name)
+                                self.match_view_within_type(type, view, False)
                         else:
                             print('continue')
                             continue
+
+
+    def build_graph_element(self, item, view):
+        print('****bge******')
+        print(item)
+        print(dir(item))
+        print(item.__hash__())
+        # print(item.__getattribute__('_tx_attrs').items())
+        print(view)
+        print(dir(view))
+        graph_element = None
+        found_label = False
+        # print(view.__getattribute__('_tx_attrs').items())
+        for prop in view.properties:
+            if prop.__class__.__name__ == 'LabelProperty':
+                label = prop.label[0]
+                if label.__class__.__name__ == 'ClassLabel':
+                    # resolve item name
+                    element_label = self.get_class_property(label.classProperties, item)
+                else:
+                    element_label = prop.label[0]
+                found_label = True
+
+        # if label property is not found set default with element index
+        if not found_label:
+            element_label = 'Element_{0}'.format(self.elements.__len__())
+
+        # if element is edge
+        if view.shape in ('Line'):
+            print('.....creating edge.....')
+            start_element = None
+            end_element = None
+            for prop in view.properties:
+                print(prop)
+                if prop.__class__.__name__ == 'LineStartProperty':
+                    print('LineStartProperty')
+                    print(dir(prop))
+                    start_element = self.get_class_property(prop.classProperties, item)
+                    print(start_element)
+                    print(self.elements[start_element.__hash__()].to_json())
+                    start_element = self.elements[start_element.__hash__()]
+                elif prop.__class__.__name__ == 'LineEndProperty':
+                    print('LineEndProperty')
+                    print(dir(prop))
+                    end_element = self.get_class_property(prop.classProperties, item)
+                    print(end_element)
+                    print(self.elements[end_element.__hash__()].to_json())
+                    end_element = self.elements[end_element.__hash__()]
+                if start_element is not None and end_element is not None:
+                    graph_element = cy.Edge(element_label, start_element, end_element, item.__hash__())
+                    break
+        else:
+            graph_element = cy.Node(element_label, item.__hash__())
+
+        return {item.__hash__(): graph_element}
+
+    def get_class_property(self, class_properties, starting_property):
+        result_property = starting_property
+        for class_prop in class_properties:
+            if hasattr(result_property, class_prop):
+                result_property = result_property.__getattribute__(class_prop)
+        return result_property
 
 def build_path_from_import(view_model, _import):
     path = os.path.dirname(view_model)
@@ -95,6 +217,7 @@ def build_path_from_import(view_model, _import):
         else:
             path = os.path.join(path, subpath)
     return path
+
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
@@ -111,3 +234,9 @@ if __name__ == '__main__':
 
         viewx_interpreter = ViewXInterpreter(view_model)
         viewx_interpreter.interpret(target_model)
+        
+        for elk, elv in viewx_interpreter.elements.items():
+            print(elk)
+            print(elv.to_json())
+
+        preview_generator.generate(view_model, target_model, viewx_interpreter)

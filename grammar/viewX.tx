@@ -71,11 +71,11 @@ Stroke:
 ;
 
 LabelProperty:
-    'label' ':' label=Label ('{' labelProperties+=ShapeProperty '}')?
+    'label' ':' (label=STRING | label=ClassLabel) ('{' labelProperties+=ShapeProperty '}')?
 ;
 
-Label:
-    STRING | (class=[ClassView] '.' classProperty=ID)
+ClassLabel:
+    classView=[ClassView] ('.' classProperties+=ID['.'])?
 ;
 
 LineProperties:
@@ -83,11 +83,11 @@ LineProperties:
 ;
 
 LineStartProperty:
-    'start' ':' class=[ClassView] '.' classProperty=ID // this class property needs to be defined here as ClassView
+    'start' ':' classView=[ClassView] ('.' classProperties+=ID['.']) // this class property needs to be defined here as ClassView
 ;
 
 LineEndProperty:
-    'end' ':' class=[ClassView] '.' classProperty=ID
+    'end' ':' classView=[ClassView] ('.' classProperties+=ID['.'])
 ;
 
 Comment:

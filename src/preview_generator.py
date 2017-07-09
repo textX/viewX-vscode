@@ -6,7 +6,7 @@ TEMPLATE_NAME = 'preview.template'
 ROOT_PATH = os.path.abspath(os.path.dirname(__file__))
 OUTPUT_PATH = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'graph_preview'))
 
-def generate(view_model, model):
+def generate(view_model, model, viewx_interpreter):
 
     # Initialize template engine.
     jinja_env = jinja2.Environment(
@@ -21,7 +21,8 @@ def generate(view_model, model):
     # render the template
     rendered = template.render({'date': date,
                                 'view_model': view_model,
-                                'model': model})
+                                'model': model,
+                                'elements': viewx_interpreter.elements.values()})
 
     # Write rendered content to the file
     with open(os.path.join(OUTPUT_PATH, 'preview.html'), 'w') as preview_file:

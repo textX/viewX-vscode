@@ -18,109 +18,22 @@
     <script>
         var cy = cytoscape({
             container: document.getElementById('cy'),
-            elements: [{
-                    "group": "nodes",
-                    "data": {
-                        "id": "a",
-                        "label": "Gene1"
-                    },
-                    "classes": "foo"
-                },
-                {
-                    "group": "nodes",
-                    "data": {
-                        "id": "b",
-                        "label": "Gene2"
-                    },
-                    "classes": "foo"
-                },
-                {
-                    "group": "nodes",
-                    "data": {
-                        "id": "c",
-                        "label": "Gene3"
-                    },
-                    "classes": "foo"
-                },
-                {
-                    "group": "nodes",
-                    "data": {
-                        "id": "d",
-                        "label": "Gene4"
-                    },
-                    "classes": "bar"
-                },
-                {
-                    "group": "nodes",
-                    "data": {
-                        "id": "e",
-                        "label": "Gene5"
-                    },
-                    "classes": "bar"
-                },
-                {
-                    "group": "nodes",
-                    "data": {
-                        "id": "f",
-                        "label": "Gene6"
-                    },
-                    "classes": "bar"
-                },
-                {
-                    "group": "edges",
-                    "data": {
-                        "id": "ab",
-                        "source": "a",
-                        "target": "b"
-                    }
-                },
-                {
-                    "group": "edges",
-                    "data": {
-                        "id": "cd",
-                        "source": "c",
-                        "target": "d"
-                    }
-                },
-                {
-                    "group": "edges",
-                    "data": {
-                        "id": "ef",
-                        "source": "e",
-                        "target": "f"
-                    }
-                },
-                {
-                    "group": "edges",
-                    "data": {
-                        "id": "ac",
-                        "source": "a",
-                        "target": "d"
-                    }
-                },
-                {
-                    "group": "edges",
-                    "data": {
-                        "id": "be",
-                        "source": "b",
-                        "target": "e"
-                    }
-                }
+            elements: [
+                {% for element in elements %}
+                    {# workaround because join() filter splits each letter after applying to_json() function #}
+                    {% if not loop.first %}
+                    ,{{element.to_json()}}
+                    {% else %}
+                    {{element.to_json()}}
+                    {% endif %}
+                {% endfor %}
             ],
             style: [{
-                    selector: 'node.foo',
+                    selector: 'node',
                     style: {
                         'shape': 'hexagon',
                         'background-color': 'red',
-                        'label': 'data(id)'
-                    }
-                },
-                {
-                    selector: 'node.bar',
-                    style: {
-                        'shape': 'rectangle',
-                        'background-color': 'blue',
-                        'label': 'data(id)'
+                        'label': 'data(label)'
                     }
                 },
                 {
@@ -129,7 +42,8 @@
                         'width': 3,
                         'line-color': '#ccc',
                         'target-arrow-color': '#ccc',
-                        'target-arrow-shape': 'triangle'
+                        'target-arrow-shape': 'triangle',
+                        'label': 'data(label)'
                     }
                 }
             ],

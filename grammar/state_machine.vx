@@ -31,6 +31,7 @@ view Event as Circle inside State
 view Transition as Line
 {
     layout: horizontal
+    label: Transition.event.name
     stroke: 3 red
     start: Transition.event
     end: Transition.to_state
