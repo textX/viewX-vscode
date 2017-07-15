@@ -58,6 +58,7 @@ class ViewXInterpreter(object):
             visitor = cre.ViewStylePropertyVisitor(view.shape)
             for prop in view.properties:
                 visitor.visit(prop)
+            self.styles.append(visitor.view_style)
 
     def match_view_within_type(self, type, view, clear=True):
         print()
@@ -162,6 +163,7 @@ class ViewXInterpreter(object):
             graph_element = cy.Node(item.__hash__())
         
         graph_element.add_data('label', element_label)
+        graph_element.add_class(view.shape.lower())
         return {item.__hash__(): graph_element}
     
 
@@ -202,8 +204,15 @@ if __name__ == '__main__':
         viewx_interpreter = ViewXInterpreter(view_model)
         viewx_interpreter.interpret(target_model)
         
+        print()
+        print('elements:')
         for elk, elv in viewx_interpreter.elements.items():
             print(elk)
             print(elv.to_json())
+
+        print()
+        print('styles:')
+        for style in viewx_interpreter.styles:
+            print(style.to_json())
 
         preview_generator.generate(view_model, target_model, viewx_interpreter)

@@ -13,13 +13,19 @@ class ViewStylePropertyVisitor(object):
     view_style = None
     
     def __init__(self, shape):
-        selector = 'edge' if shape in edge_shapes else 'node'
-        self.view_style = ViewStyle(selector)
-        self.view_style.style['shape'] = shape.lower()
+        if shape in edge_shapes:
+            self.view_style = ViewStyle('edge.{}'.format(shape.lower()))
+        elif shape.lower() in node_shapes:
+            self.view_style = ViewStyle('node.{}'.format(shape.lower()))
+            self.view_style.style['shape'] = shape.lower()
+        else:
+            print('root level style properties')
+            self.view_style = ViewStyle('root')
 
     def visit(self, _property):
         switch_visit = {
             'BackgroundProperty': self.visit_background,
+            'BorderProperty': self.visit_border,
             'StrokeProperty': self.visit_stroke
         }
         visit = switch_visit.get(_property.__class__.__name__, self.visit_default)
@@ -31,9 +37,26 @@ class ViewStylePropertyVisitor(object):
         print(dir(_property))
         print(_property.background)
         print(dir(_property.background))
+        if _property.background.__class__.__name__ == 'ColorFn':
+            self.view_style.style['background-color'] = _property.background.color
+        elif _property.background.__class__.__name__ == 'ImageFn':
+            self.view_style.style['background-image'] = _property.background.image
+            self.view_style.style['background-fit'] = 'cover cover'
+        else:
+            pass
     
+    def visit_border(self, _property):
+        print('visit_border')
+        self.view_style.style['border-width'] = _property.border.width
+        self.view_style.style['border-style'] = _property.border.style
+        self.view_style.style['border-color'] = _property.border.color
+
     def visit_stroke(self, _property):
         print('visit_stroke')
+        print(_property)
+        print(dir(_property))
+        print(_property.stroke)
+        print(dir(_property.stroke))
         pass
 
     def visit_default(self, _property):

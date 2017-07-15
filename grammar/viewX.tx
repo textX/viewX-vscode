@@ -31,7 +31,7 @@ ViewProperty:
 ;
 
 ShapeProperty:
-    BackgroundProperty | StrokeProperty
+    BackgroundProperty | StrokeProperty | BorderProperty
 ;
 
 BackgroundProperty:
@@ -58,8 +58,20 @@ StrokeProperty:
     'stroke' ':' stroke=Stroke
 ;
 
+BorderProperty:
+    'border' ':' border=Border
+;
+
 Stroke:
     width=INT color=Color
+;
+
+Border:
+    width=INT style=BorderStyle color=Color
+;
+
+BorderStyle:
+    'solid' | 'dotted' | 'dashed' | 'double'
 ;
 
 LabelProperty:

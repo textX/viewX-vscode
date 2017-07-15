@@ -16,7 +16,7 @@ class Element(object):
         self.classes = '' # a space separated list of class names that the element has
 
     def add_class(self, cls):
-        if self.classes.__len__ > 0:
+        if self.classes.__len__() > 0:
             self.classes += ' '    
         self.classes += cls
 
@@ -58,7 +58,7 @@ def serialize_json(obj):
     # handle abstract class serialization
     elif obj.__class__.__name__ == 'type' and obj.__name__ == 'Element':
         json = obj.__name__
-    elif obj.__class__.__name__ == 'ElementStyle':
+    elif obj.__class__.__name__ == 'ViewStyle':
         json = {}
         json.update(vars(obj))
     else:
@@ -85,6 +85,9 @@ class ViewStyle(object):
         #     self.selector += '.' + element.classes.replace(' ', '.')
         self.selector = selector
         self.style = {}
+
+    def to_json(self):
+        return json.dumps(self, default=serialize_json)
 
 n1 = Node()
 n1.classes = 'foo bar'

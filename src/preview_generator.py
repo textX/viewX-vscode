@@ -22,7 +22,8 @@ def generate(view_model, model, viewx_interpreter):
     rendered = template.render({'date': date,
                                 'view_model': view_model,
                                 'model': model,
-                                'elements': viewx_interpreter.elements.values()})
+                                'elements': viewx_interpreter.elements.values(),
+                                'styles': viewx_interpreter.styles})
 
     # Write rendered content to the file
     with open(os.path.join(OUTPUT_PATH, 'preview.html'), 'w') as preview_file:

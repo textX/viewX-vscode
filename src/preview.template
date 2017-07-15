@@ -28,24 +28,15 @@
                     {% endif %}
                 {% endfor %}
             ],
-            style: [{
-                    selector: 'node',
-                    style: {
-                        'shape': 'hexagon',
-                        'background-color': 'red',
-                        'label': 'data(label)'
-                    }
-                },
-                {
-                    selector: 'edge',
-                    style: {
-                        'width': 3,
-                        'line-color': '#ccc',
-                        'target-arrow-color': '#ccc',
-                        'target-arrow-shape': 'triangle',
-                        'label': 'data(label)'
-                    }
-                }
+            style: [
+                {% for style in styles %}
+                    {# workaround because join() filter splits each letter after applying to_json() function #}
+                    {% if not loop.first %}
+                    ,{{style.to_json()}}
+                    {% else %}
+                    {{style.to_json()}}
+                    {% endif %}
+                {% endfor %}
             ],
             layout: {
                 name: 'circle',

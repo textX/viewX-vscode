@@ -5,30 +5,31 @@ apply to "*.sm;state*.*"
 view StateMachine as State
 {
     background: color(white)
-    stroke: 2 black
+    border: 2 solid black
 }
 
 view State as Rectangle
 {
     background: color(blue)
-    stroke: 1 yellow
+    border: 2 double yellow
     label: State.name
     {
-        background: color(white)
+        background: color(red)
         stroke: 2 black
     }
 }
 
-view Event as Circle inside State
+view Event as Ellipse inside State
 {
     background: color(green)
     label: Event.name
+    border: 1 dotted orange
 }
 
 view Transition as Line
 {
     label: Transition.event.name
-    stroke: 3 red
+    border: 3 dashed red
     start: Transition.event
     end: Transition.to_state
 }
