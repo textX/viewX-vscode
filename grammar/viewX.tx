@@ -27,19 +27,11 @@ Shape:
 ;
 
 ViewProperty:
-    ShapeProperty | LabelProperty | LineProperties
+    ShapeProperty | LabelProperty | EdgeProperties
 ;
 
 ShapeProperty:
-    LayoutProperty | BackgroundProperty | StrokeProperty
-;
-
-LayoutProperty:
-    'layout' ':' layout=Layout
-;
-
-Layout:
-    'vertical' | 'horizontal'
+    BackgroundProperty | StrokeProperty
 ;
 
 BackgroundProperty:
@@ -78,15 +70,15 @@ ClassLabel:
     classView=[ClassView] ('.' classProperties+=ID['.'])?
 ;
 
-LineProperties:
-    LineStartProperty | LineEndProperty
+EdgeProperties:
+    EdgeStartProperty | EdgeEndProperty
 ;
 
-LineStartProperty:
+EdgeStartProperty:
     'start' ':' classView=[ClassView] ('.' classProperties+=ID['.']) // this class property needs to be defined here as ClassView
 ;
 
-LineEndProperty:
+EdgeEndProperty:
     'end' ':' classView=[ClassView] ('.' classProperties+=ID['.'])
 ;
 

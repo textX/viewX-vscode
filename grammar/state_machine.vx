@@ -4,19 +4,16 @@ apply to "*.sm;state*.*"
 
 view StateMachine as State
 {
-    layout: horizontal
     background: color(white)
     stroke: 2 black
 }
 
 view State as Rectangle
 {
-    layout: vertical
     background: color(blue)
     stroke: 1 yellow
     label: State.name
     {
-        layout: horizontal
         background: color(white)
         stroke: 2 black
     }
@@ -30,7 +27,6 @@ view Event as Circle inside State
 
 view Transition as Line
 {
-    layout: horizontal
     label: Transition.event.name
     stroke: 3 red
     start: Transition.event
