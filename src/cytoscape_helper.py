@@ -93,7 +93,7 @@ e1 = Edge(n1, n2)
 
 # j1 = json.dumps(n1, default=serialize_json)
 
-s1 = ElementStyle(n1)
+s1 = ViewStyle(n1)
 print(s1.selector)
 
 j2 = json.dumps(s1, default=serialize_json)

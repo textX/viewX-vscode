@@ -7,6 +7,7 @@ import os
 from textx.metamodel import metamodel_from_file
 import preview_generator
 import cytoscape_helper as cy
+import cytoscape_rule_engine as cre
 
 for v in sys.argv[0:]:
     print(v)
@@ -31,30 +32,13 @@ class ViewXInterpreter(object):
     def __init__(self, viewmodel):
         self.view_model = viewmodel
         self.elements = {}
+        self.styles = []
         self.traversed_types = []
 
     def interpret(self, model):
         """
         Main interpreting logic.
         """
-
-        # print(dir(model))
-        # print()
-        # print(dir(model.__getattribute__('_tx_attrs')))
-        # print()
-        # for at in model.__getattribute__('_tx_attrs'):
-        #     print(at)
-        # print()
-        # print(model.__getattribute__('_tx_attrs')['states'])
-        # print(dir(model.__getattribute__('_tx_attrs')['states']))
-        # print(dir(model.__getattribute__('_tx_attrs')['states'].cls))
-        # print(dir(model.__getattribute__('_tx_attrs')['states'].cls._tx_peg_rule))
-        # print(model.__getattribute__('_tx_attrs')['states'].cls._tx_peg_rule)
-        # print(model.__getattribute__('_tx_attrs')['states'].name)
-        # print()
-        # print(model.__getattribute__('states'))
-        # print(dir(model.__getattribute__('states')))
-        # print()
 
         for view in view_model.views:
             print(view.name)
@@ -69,7 +53,11 @@ class ViewXInterpreter(object):
             print("1. {}".format(view.name))
             # loop over model tx properties
             self.match_view_within_type(model, view)
-
+            # generate view styles
+            print('generate view styles')
+            visitor = cre.ViewStylePropertyVisitor(view.shape)
+            for prop in view.properties:
+                visitor.visit(prop)
 
     def match_view_within_type(self, type, view, clear=True):
         print()
@@ -79,127 +67,106 @@ class ViewXInterpreter(object):
         print()
         if clear:
             self.traversed_types.clear()
-        if not self.traversed_types.__contains__(view.name):
-            self.traversed_types.append(view.name)
+        if not self.traversed_types.__contains__(type.__class__.__name__):
+            print('traversed not contains {}, add it'.format(type.__class__.__name__))
+            self.traversed_types.append(type.__class__.__name__)
+            print(self.traversed_types)
+            # take all defined items within type
             for key, value in type._tx_attrs.items():
                 print("2. {}".format(key))
                 # if defined get the property
                 if value.cont:
-                    attr = type.__getattribute__(key)
-                    # print('++++')
-                    # print(attr)
-                    # print(dir(attr))
-                    # print('+++++++')
+                    items = type.__getattribute__(key)
                     # if non-empty list
-                    if attr.__class__.__name__ == 'list':
-                        first = attr[0] if attr.__len__() > 0 else None
+                    #
+                    # match also single item
+                    #
+                    if items.__class__.__name__ == 'list':
+                        first = items[0] if items.__len__() > 0 else None
                         if first and first.__class__.__name__ == view.name:
                             print('match')
-                            for item in attr:
+                            for item in items:
                                 # create json
                                 print(item)
-                                self.elements.update(self.build_graph_element(item, view))
+                                # check item relevant properties (label, is_edge(connection points)...)
+                                labelProperty = None
+                                for prop in view.properties:
+                                    if prop.__class__.__name__ == 'LabelProperty':
+                                        labelProperty = prop.label[0]
+                                        break
+                                is_edge = view.shape in cre.edge_shapes
+                                self.elements.update(self.build_graph_element(item, view, labelProperty, is_edge))
                             break
-                        elif first:
-                            print('elif')
-                            # print(first)
-                            # print(dir(first))
-                            # print(first._tx_attrs)
-                            # print(dir(first._tx_attrs))
+                        else:
+                            print('else')
+                            # iterate through defined tx items
                             for key, value in first._tx_attrs.items():
-                                # print(k)
-                                # print(v)
-                                # print(dir(v))
                                 print('*****1')
                                 print(first)
-                                # print(v.cls)
-                                # print(dir(v.cls))
-                                # print(v.cls._tx_type)
-                                # print(v.cls._tx_metamodel)
-                                # print(v.cls._tx_peg_rule)
-                                # print(first.__getattribute__(k))
-                                # print(first.__getattribute__(k).__class__.__name__)
-                                print(attr)
+                                print(items)
                                 print('..........')
-                                for item in attr:
+                                match_found = False
+                                print(value.cont)
+                                for item in items:
+                                    # get tx item property
                                     item_property = item.__getattribute__(key)
+                                    print('item property')
+                                    print(item_property)
+                                    # if property class match view
                                     if item_property.__class__.__name__ == 'list':
                                         if item_property[0].__class__.__name__ == view.name:
                                             print('match inside view')
-                                            print(item)
-                                            print(key)
-                                            print(item_property)
-                                            print(item_property[0].__class__.__name__)
-                                            print(',,,,,,,')
-                                            print(item_property[0], view.name)
-                                            self.elements.update(self.build_graph_element(item_property[0], view))
-                                print('*****2')
-                                # print(v.name)
-                                # print(v.ref)
-                                # print('*****3')
-                                print(view.name)
-                                self.match_view_within_type(type, view, False)
-                        else:
-                            print('continue')
-                            continue
+                                            match_found = True
+                                            # check item relevant properties (label, is_edge(connection points)...)
+                                            labelProperty = None
+                                            for prop in view.properties:
+                                                if prop.__class__.__name__ == 'LabelProperty':
+                                                    labelProperty = prop.label[0]
+                                                    break
+                                            is_edge = view.shape in cre.edge_shapes
+                                            self.elements.update(self.build_graph_element(item_property[0], view, labelProperty, is_edge))
+                                    if not match_found:
+                                        print('break')
+                                        break
 
 
-    def build_graph_element(self, item, view):
-        print('****bge******')
-        print(item)
-        print(dir(item))
-        print(item.__hash__())
+    def build_graph_element(self, item, view, labelProperty=None, is_edge=False):
         # print(item.__getattribute__('_tx_attrs').items())
-        print(view)
-        print(dir(view))
+        print('****bge******')
         graph_element = None
-        found_label = False
-        # print(view.__getattribute__('_tx_attrs').items())
-        for prop in view.properties:
-            if prop.__class__.__name__ == 'LabelProperty':
-                label = prop.label[0]
-                if label.__class__.__name__ == 'ClassLabel':
-                    # resolve item name
-                    element_label = self.get_class_property(label.classProperties, item)
-                else:
-                    element_label = prop.label[0]
-                found_label = True
-
-        # if label property is not found set default with element index
-        if not found_label:
+        element_label = None
+        # set default label with element index
+        if labelProperty is None:
             element_label = 'Element_{0}'.format(self.elements.__len__())
-
-        # if element is edge
-        if view.shape in ('Line'):
-            print('.....creating edge.....')
+        else:
+            if labelProperty.__class__.__name__ == 'ClassLabel':
+                # resolve item name
+                element_label = self.get_class_property(labelProperty.classProperties, item)
+            else:
+                element_label = labelProperty
+        print(element_label)
+        if is_edge:
             start_element = None
             end_element = None
             for prop in view.properties:
-                print(prop)
-                if prop.__class__.__name__ == 'LineStartProperty':
-                    print('LineStartProperty')
-                    print(dir(prop))
+                if prop.__class__.__name__ == 'EdgeStartProperty':
                     start_element = self.get_class_property(prop.classProperties, item)
-                    print(start_element)
-                    print(self.elements[start_element.__hash__()].to_json())
                     start_element = self.elements[start_element.__hash__()]
-                elif prop.__class__.__name__ == 'LineEndProperty':
-                    print('LineEndProperty')
-                    print(dir(prop))
+                elif prop.__class__.__name__ == 'EdgeEndProperty':
                     end_element = self.get_class_property(prop.classProperties, item)
-                    print(end_element)
-                    print(self.elements[end_element.__hash__()].to_json())
                     end_element = self.elements[end_element.__hash__()]
+                # when both start and end nodes are defined
                 if start_element is not None and end_element is not None:
-                    graph_element = cy.Edge(element_label, start_element, end_element, item.__hash__())
-                    break
+                    graph_element = cy.Edge(start_element, end_element, item.__hash__())
         else:
-            graph_element = cy.Node(element_label, item.__hash__())
-
+            graph_element = cy.Node(item.__hash__())
+        
+        graph_element.add_data('label', element_label)
         return {item.__hash__(): graph_element}
+    
 
-    def get_class_property(self, class_properties, starting_property):
-        result_property = starting_property
+    def get_class_property(self, class_properties, starting_item):
+        result_property = starting_item
         for class_prop in class_properties:
             if hasattr(result_property, class_prop):
                 result_property = result_property.__getattribute__(class_prop)
