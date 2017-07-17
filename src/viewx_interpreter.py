@@ -89,14 +89,16 @@ class ViewXInterpreter(object):
                             for item in items:
                                 # create json
                                 print(item)
-                                # check item relevant properties (label, is_edge(connection points)...)
-                                labelProperty = None
+                                # check item relevant properties
+                                # (label, is_edge(connection points)...)
+                                label_property = None
                                 for prop in view.properties:
-                                    if prop.__class__.__name__ == 'LabelProperty':
-                                        labelProperty = prop.label[0]
+                                    if prop.__class__.__name__ == 'Label':
+                                        label_property = prop.label[0]
                                         break
                                 is_edge = view.shape in cre.edge_shapes
-                                self.elements.update(self.build_graph_element(item, view, labelProperty, is_edge))
+                                self.elements.update(
+                                        self.build_graph_element(item, view, label_property, is_edge))
                             break
                         else:
                             print('else')
@@ -119,32 +121,32 @@ class ViewXInterpreter(object):
                                             print('match inside view')
                                             match_found = True
                                             # check item relevant properties (label, is_edge(connection points)...)
-                                            labelProperty = None
+                                            label_property = None
                                             for prop in view.properties:
-                                                if prop.__class__.__name__ == 'LabelProperty':
-                                                    labelProperty = prop.label[0]
+                                                if prop.__class__.__name__ == 'Label':
+                                                    label_property = prop.label[0]
                                                     break
                                             is_edge = view.shape in cre.edge_shapes
-                                            self.elements.update(self.build_graph_element(item_property[0], view, labelProperty, is_edge))
+                                            self.elements.update(self.build_graph_element(item_property[0], view, label_property, is_edge))
                                     if not match_found:
                                         print('break')
                                         break
 
 
-    def build_graph_element(self, item, view, labelProperty=None, is_edge=False):
+    def build_graph_element(self, item, view, label_property=None, is_edge=False):
         # print(item.__getattribute__('_tx_attrs').items())
         print('****bge******')
         graph_element = None
         element_label = None
         # set default label with element index
-        if labelProperty is None:
+        if label_property is None:
             element_label = 'Element_{0}'.format(self.elements.__len__())
         else:
-            if labelProperty.__class__.__name__ == 'ClassLabel':
+            if label_property.__class__.__name__ == 'ClassLabel':
                 # resolve item name
-                element_label = self.get_class_property(labelProperty.classProperties, item)
+                element_label = self.get_class_property(label_property.classProperties, item)
             else:
-                element_label = labelProperty
+                element_label = label_property
         print(element_label)
         if is_edge:
             start_element = None

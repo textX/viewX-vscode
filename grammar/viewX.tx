@@ -27,7 +27,7 @@ Shape:
 ;
 
 ViewProperty:
-    ShapeProperty | LabelProperty | EdgeProperties
+    ShapeProperty | Label | EdgeProperty
 ;
 
 ShapeProperty:
@@ -47,7 +47,7 @@ ColorFn:
 ;
 
 Color:
-    'white' | 'black' | 'red' | 'green' | 'blue' | 'yellow' | 'orange' | /#[0-9a-fA-F]{6}/
+    'white' | 'black' | 'red' | 'green' | 'blue' | 'yellow' | 'orange' | 'purple' | /#[0-9a-fA-F]{6}/
 ;
 
 ImageFn:
@@ -55,15 +55,15 @@ ImageFn:
 ;
 
 StrokeProperty:
-    'stroke' ':' stroke=Stroke
+    'stroke' ':' width=INT color=Color style=StrokeStyle
 ;
 
 BorderProperty:
     'border' ':' border=Border
 ;
 
-Stroke:
-    width=INT color=Color
+StrokeStyle:
+    'solid' | 'dotted' | 'dashed'
 ;
 
 Border:
@@ -74,24 +74,59 @@ BorderStyle:
     'solid' | 'dotted' | 'dashed' | 'double'
 ;
 
-LabelProperty:
-    'label' ':' (label=STRING | label=ClassLabel) ('{' labelProperties+=ShapeProperty '}')?
+Label:
+    'label' ':' (label=STRING | label=ClassLabel) ('{' labelProperties+=LabelProperty '}')?
 ;
 
 ClassLabel:
     classView=[ClassView] ('.' classProperties+=ID['.'])?
 ;
 
-EdgeProperties:
+EdgeProperty:
     EdgeStartProperty | EdgeEndProperty
 ;
 
 EdgeStartProperty:
     'start' ':' classView=[ClassView] ('.' classProperties+=ID['.']) // this class property needs to be defined here as ClassView
+    ('{' arrowProperties+=ArrowProperty '}')?
 ;
 
 EdgeEndProperty:
     'end' ':' classView=[ClassView] ('.' classProperties+=ID['.'])
+    ('{' arrowProperties+=ArrowProperty '}')?
+;
+
+ArrowProperty:
+    'arrow' ':' scale=INT (shape=ArrowShape)? (fill=ArrowFill)? (color=Color)?
+;
+
+ArrowShape:
+    'tee' | 'triangle' | 'triangle-tee' | 'triangle-cross' | 'triangle-backcurve' | 'square' | 'circle' | 'diamond' | 'none'
+;
+
+ArrowFill:
+    'filled' | 'hollow'
+;
+
+LabelProperty:
+    LabelFont | LabelWrap | LabelBackground
+    // | LabelBorder | LabelOutline
+;
+
+LabelFont:
+    'font' ':' size=INT (style=LabelFontStyle)? (color=Color)?
+;
+
+LabelWrap:
+    'wrap' ':' 
+;
+
+LabelBackground:
+    'background' ':' color=Color (opacity=INT)?
+;
+
+LabelFontStyle:
+    'normal' | 'italic' | 'oblique'
 ;
 
 Comment:
