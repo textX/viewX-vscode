@@ -59,7 +59,6 @@ class ViewStylePropertyVisitor(object):
         self.view_style.style['width'] = _property.width
         self.view_style.style['line-color'] = _property.color
         self.view_style.style['line-style'] = _property.style if _property.style else 'solid'
-        pass
 
     def visit_label(self, _property):
         print('visit_label')
@@ -70,12 +69,13 @@ class ViewStylePropertyVisitor(object):
                 self.view_style.style['font-style'] = label_property.style if label_property.style else 'normal'
                 self.view_style.style['color'] = label_property.color if label_property.color else 'black'
             elif label_property.__class__.__name__ == 'LabelBackground':
-                self.view_style.style['text-background-color'] = label_property.color
+                self.view_style.style['text-background-color'] = label_property.color if label_property.color else 'white'
                 self.view_style.style['text-background-opacity'] = label_property.opacity if label_property.opacity else 0
+                self.view_style.style['text-background-shape'] = label_property.shape if label_property.shape else 'rectangle'
 
     def visit_edge_property(self, _property):
         print('visit_edge_property')
-        direction = 'source' if _property.__class__.__name__ == 'StartEdgeProperty' else 'target'
+        direction = 'source' if _property.__class__.__name__ == 'EdgeStartProperty' else 'target'
         for arrow_property in _property.arrowProperties:
             self.view_style.style['curve-style'] = 'bezier' # needed to enable arrow shapes
             self.view_style.style['arrow-scale'] = arrow_property.scale

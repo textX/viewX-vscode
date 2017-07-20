@@ -1,3 +1,6 @@
+import viewx_label
+import viewx_common
+
 ViewXModel:
     tx_import=Import
     // support wildcard * and separator ;
@@ -6,10 +9,10 @@ ViewXModel:
 ;
 
 Import:
-    'tximport' model=ID 'from' path=PathRegEx
+    'tximport' model=ID 'from' path=TxPathRegEx
 ;
 
-PathRegEx:
+TxPathRegEx:
     /"\.?(\w|\.\.|\/|[-])+(\.tx)?"/
 ;
 
@@ -34,46 +37,6 @@ ShapeProperty:
     BackgroundProperty | StrokeProperty | BorderProperty
 ;
 
-BackgroundProperty:
-    'background' ':' background=Background
-;
-
-Background:
-    ColorFn | ImageFn
-;
-
-ColorFn:
-    'color' '(' color=Color ')'
-;
-
-Color:
-    'white' | 'black' | 'red' | 'green' | 'blue' | 'yellow' | 'orange' | 'purple' | /#[0-9a-fA-F]{6}/
-;
-
-ImageFn:
-    'image' '(' image=PathRegEx ')'
-;
-
-StrokeProperty:
-    'stroke' ':' width=INT color=Color style=StrokeStyle
-;
-
-BorderProperty:
-    'border' ':' border=Border
-;
-
-StrokeStyle:
-    'solid' | 'dotted' | 'dashed'
-;
-
-Border:
-    width=INT style=BorderStyle color=Color
-;
-
-BorderStyle:
-    'solid' | 'dotted' | 'dashed' | 'double'
-;
-
 Label:
     'label' ':' (label=STRING | label=ClassLabel) ('{' labelProperties+=LabelProperty '}')?
 ;
@@ -81,6 +44,8 @@ Label:
 ClassLabel:
     classView=[ClassView] ('.' classProperties+=ID['.'])?
 ;
+
+// edge related rules
 
 EdgeProperty:
     EdgeStartProperty | EdgeEndProperty
@@ -97,7 +62,7 @@ EdgeEndProperty:
 ;
 
 ArrowProperty:
-    'arrow' ':' scale=INT (shape=ArrowShape)? (fill=ArrowFill)? (color=Color)?
+    'arrow' ':' (color=Color)? scale=INT (shape=ArrowShape)? (fill=ArrowFill)?
 ;
 
 ArrowShape:
@@ -106,27 +71,6 @@ ArrowShape:
 
 ArrowFill:
     'filled' | 'hollow'
-;
-
-LabelProperty:
-    LabelFont | LabelWrap | LabelBackground
-    // | LabelBorder | LabelOutline
-;
-
-LabelFont:
-    'font' ':' size=INT (style=LabelFontStyle)? (color=Color)?
-;
-
-LabelWrap:
-    'wrap' ':' 
-;
-
-LabelBackground:
-    'background' ':' color=Color (opacity=INT)?
-;
-
-LabelFontStyle:
-    'normal' | 'italic' | 'oblique'
 ;
 
 Comment:

@@ -1,0 +1,26 @@
+import viewx_common
+
+LabelProperty:
+    LabelFont | LabelWrap | LabelBackground
+    // | LabelBorder | LabelOutline
+;
+
+LabelFont:
+    'font' ':' (color=Color)? size=INT (style=LabelFontStyle)?
+;
+
+LabelWrap:
+    'wrap' ':' 
+;
+
+LabelBackground:
+    'background' ':' color=Color (opacity=FLOAT)? (shape=LabelBackgroundShape)?
+;
+
+LabelBackgroundShape:
+    'rectangle' | 'roundrectangle'
+;
+
+LabelFontStyle:
+    'normal' | 'italic' | 'oblique'
+;

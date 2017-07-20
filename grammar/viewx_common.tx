@@ -1,0 +1,43 @@
+BackgroundProperty:
+    'background' ':' background=Background
+;
+
+Background:
+    ColorFn | ImageFn
+;
+
+ColorFn:
+    color=Color
+;
+
+Color:
+    /[a-z]+/ | /#[0-9a-fA-F]{6}/
+;
+
+ImageFn:
+    image=ImgPathRegEx
+;
+
+ImgPathRegEx:
+    /"\.?(\w|\.\.|\/|[-])+((\.png)|(\.jpg))?"/
+;
+
+StrokeProperty:
+    'stroke' ':' color=Color width=INT style=StrokeStyle
+;
+
+StrokeStyle:
+    'solid' | 'dotted' | 'dashed'
+;
+
+BorderProperty:
+    'border' ':' border=Border
+;
+
+Border:
+    color=Color width=INT style=BorderStyle
+;
+
+BorderStyle:
+    'solid' | 'dotted' | 'dashed' | 'double'
+;

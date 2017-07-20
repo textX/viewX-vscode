@@ -2,43 +2,47 @@ tximport StateMachine from "./../tx_samples/state_machine/state_machine.tx"
 
 apply to "*.sm;state*.*"
 
-view StateMachine as State
+view StateMachine as Graph
 {
-    background: color(white)
-    border: 4 solid black
+    background: white
+    border: black 4 solid
 }
 
 view State as Rectangle
 {
-    background: color(blue)
-    border: 4 double yellow
+    background: blue
+    border: yellow 4 double
     label: State.name
     {
-        background: red 88
-        font: 13 italic purple
+        background: yellow 0.8
+        font: purple 13 italic
     }
 }
 
 view Event as Ellipse inside State
 {
-    background: color(green)
+    background: green
     label: Event.name
     {
         font: 15
+        background: red 0.5
     }
-    border: 2 dotted orange
+    border: orange 2 dotted
 }
 
 view Transition as Line
 {
-    stroke: 3 green dashed
+    stroke: green 3 dashed
     label: Transition.event.name
     {
-        font: 18 oblique blue
+        font: blue 18 oblique
     }
     start: Transition.event
+    {
+        arrow: yellow 5 diamond filled
+    }
     end: Transition.to_state
     {
-        arrow: 2 triangle filled red
+        arrow: red 2 triangle hollow
     }
 }
