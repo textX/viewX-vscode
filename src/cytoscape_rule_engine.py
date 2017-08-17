@@ -12,12 +12,12 @@ node_border_style = ('solid', 'dotted', 'dashed', 'double')
 class ViewStylePropertyVisitor(object):
     view_style = None
     
-    def __init__(self, shape):
-        if shape in edge_shapes:
-            self.view_style = ViewStyle('edge.{}'.format(shape.lower()))
-        elif shape.lower() in node_shapes:
-            self.view_style = ViewStyle('node.{}'.format(shape.lower()))
-            self.view_style.style['shape'] = shape.lower()
+    def __init__(self, view):
+        if view.shape in edge_shapes:
+            self.view_style = ViewStyle('edge.{}'.format(view.name.lower()))
+        elif view.shape.lower() in node_shapes:
+            self.view_style = ViewStyle('node.{}'.format(view.name.lower()))
+            self.view_style.style['shape'] = view.shape.lower()
         else:
             print('root level style properties')
             self.view_style = ViewStyle('root')

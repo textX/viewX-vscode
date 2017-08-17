@@ -26,7 +26,8 @@ ClassView:
 ;
 
 Shape:
-    'Graph' | 'State' | 'Circle' | 'Ellipse' | 'Rectangle' | 'Line'
+    'Graph' | 'State' | 'Line' |
+    'Ellipse' | 'Triangle' | 'Rectangle' | 'Roundrectangle' | 'Rhomboid' | 'Diamond' | 'Star' | 'Vee'
 ;
 
 ViewProperty:

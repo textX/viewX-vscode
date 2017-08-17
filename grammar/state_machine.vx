@@ -19,7 +19,7 @@ view State as Rectangle
     }
 }
 
-view Event as Ellipse inside State
+view Event as Ellipse
 {
     background: green
     label: Event.name
@@ -28,6 +28,17 @@ view Event as Ellipse inside State
         background: red 0.5
     }
     border: orange 2 dotted
+}
+
+view Command as Star inside State
+{
+    background: yellow
+    label: Command.name
+    {
+        font: white 12
+        background: black 0.5
+    }
+    border: red 2 solid
 }
 
 view Transition as Line
