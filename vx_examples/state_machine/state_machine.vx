@@ -19,7 +19,7 @@ view State as Rectangle
     }
 }
 
-view Event as Ellipse
+view Event as Ellipse // inside State where this = State.transitions.event
 {
     background: green
     label: Event.name

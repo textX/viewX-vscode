@@ -4,6 +4,7 @@ Module which serves as a viewX model interpreter.
 
 import sys
 import os
+import copy
 from textx.metamodel import metamodel_from_file
 import preview_generator
 import cytoscape_helper as cy
@@ -34,6 +35,7 @@ class ViewXInterpreter(object):
         self.elements = {}
         self.styles = []
         self.traversed_types = []
+        self.existing_parents = []
 
     def interpret(self, model):
         """
@@ -101,7 +103,9 @@ class ViewXInterpreter(object):
                                 print(item)
                                 print('from')
                                 print(items)
-                                self.elements.update(self.build_graph_element(item, view))
+                                elements = self.build_graph_element(item, view)
+                                for el in elements:
+                                    self.elements.update(el)
                         else:
                             print('* else - not correct type')
                             print(view)
@@ -168,32 +172,32 @@ class ViewXInterpreter(object):
             end_element = None
             for prop in view.properties:
                 if prop.__class__.__name__ == 'EdgeStartProperty':
-                    print('Start edge property')
-                    print(item)
-                    print(dir(item))
-                    print(prop)
-                    print(prop.classProperties)
-                    print(dir(prop))
+                    # print('Start edge property')
+                    # print(item)
+                    # print(dir(item))
+                    # print(prop)
+                    # print(prop.classProperties)
+                    # print(dir(prop))
                     start_element = self.get_class_property(prop.classProperties, item)
-                    print(start_element)
-                    print(dir(start_element))
-                    print(type(start_element))
-                    print(self.elements)
-                    print(start_element.__hash__())
+                    # print(start_element)
+                    # print(dir(start_element))
+                    # print(type(start_element))
+                    # print(self.elements)
+                    # print(start_element.__hash__())
                     start_element = self.elements[start_element.__hash__()]
                 elif prop.__class__.__name__ == 'EdgeEndProperty':
-                    print('End edge property')
-                    print(item)
-                    print(dir(item))
-                    print(prop)
-                    print(prop.classProperties)
-                    print(dir(prop))
+                    # print('End edge property')
+                    # print(item)
+                    # print(dir(item))
+                    # print(prop)
+                    # print(prop.classProperties)
+                    # print(dir(prop))
                     end_element = self.get_class_property(prop.classProperties, item)
-                    print(end_element)
-                    print(dir(end_element))
-                    print(type(end_element))
-                    print(self.elements)
-                    print(end_element.__hash__())
+                    # print(end_element)
+                    # print(dir(end_element))
+                    # print(type(end_element))
+                    # print(self.elements)
+                    # print(end_element.__hash__())
                     end_element = self.elements[end_element.__hash__()]
                 # when both start and end nodes are defined
                 if start_element is not None and end_element is not None:
@@ -205,11 +209,25 @@ class ViewXInterpreter(object):
         
         # add parent if defined
         if view.parentView is not None:
+            # if view.conditional_parent is not None:
+            #     self.existing_parents.clear()
+            #     parent = None
+            #     elements = []
+            #     while True:
+            #         parent = self.find_view_parent_tx_type(item, view, self.model)
+            #         if parent is None:
+            #             break
+            #         self.existing_parents.append(parent)
+            #         clone = copy.deepcopy(graph_element)
+            #         clone.add_class(view.name.lower())
+            #         elements.append({clone.__hash__(): clone})
+            #     return elements
+            # else:
             parent = self.find_view_parent_tx_type(item, view, self.model)
             graph_element.add_data('parent', parent.__hash__())            
 
         graph_element.add_class(view.name.lower())
-        return {item.__hash__(): graph_element}
+        return [{item.__hash__(): graph_element}]
     
 
     def get_class_property(self, class_properties, starting_item):
@@ -218,6 +236,39 @@ class ViewXInterpreter(object):
             if hasattr(result_property, class_prop):
                 result_property = result_property.__getattribute__(class_prop)
         return result_property
+
+    def item_contains_property_by_structure(self, class_properties, starting_item, property_to_find):
+        result_property = starting_item
+        if class_properties.__len__() == 0:
+            print()
+            print('found property by structure!!!!!!')
+            print('result_property - {}'.format(result_property.__hash__()))
+            print('property_to_find - {}'.format(property_to_find.__hash__()))
+            return result_property.__hash__() == property_to_find.__hash__()
+
+        if result_property.__class__.__name__ == 'list':
+            print()
+            print('search in list')
+            print(result_property)
+            print(result_property)
+            print(class_properties)
+            for item in result_property:
+                for class_prop in class_properties:
+                    if hasattr(item, class_prop):
+                        result_property = item.__getattribute__(class_prop)
+                        if self.item_contains_property_by_structure(class_properties[1:], result_property, property_to_find):
+                            return True
+        else:
+            print()
+            print('search in single')
+            print(result_property)
+            print(class_properties)
+            for class_prop in class_properties:
+                if hasattr(result_property, class_prop):
+                    result_property = result_property.__getattribute__(class_prop)
+                    if self.item_contains_property_by_structure(class_properties[1:], result_property, property_to_find):
+                        return True
+        return False
 
 
     def find_view_parent_tx_type(self, tx_type, view_type, tx_root_type):
@@ -247,6 +298,25 @@ class ViewXInterpreter(object):
                     if first1 and view_type.parentView is not None and first1.__class__.__name__ == view_type.parentView.name:
                         print('match1 - parent type found')
                         for item1 in items1:
+                            # if inside condition defined
+
+                            if view_type.conditional_parent is not None:
+                                print()
+                                print('* inside condition defined')
+                                print(view_type)
+                                print(tx_type)
+                                print('tx_type - {}'.format(tx_type.__hash__()))
+
+                                print()
+                                print(item1)
+                                print('item1 - {}'.format(item1.__hash__()))
+                                print(view_type.class_properties)
+
+                                if item1 not in self.existing_parents and self.item_contains_property_by_structure(view_type.class_properties, item1, tx_type):
+                                    print('conditional parent found')
+                                    print(item1)
+                                    return item1
+
                             # find child
                             for key2, value2 in item1._tx_attrs.items():
                                 print("2-3. {}".format(key2))

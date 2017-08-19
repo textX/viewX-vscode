@@ -21,7 +21,7 @@ ApplyTo:
 ;
 
 ClassView:
-    'view' name=ID 'as' shape=Shape ('inside' parentView=[ClassView])?
+    'view' name=ID 'as' shape=Shape ('inside' parentView=[ClassView] ('where' 'this' '=' conditional_parent=[ClassView] ('.' class_properties+=ID['.']))?)?
     ('{' properties+=ViewProperty '}')?
 ;
 
