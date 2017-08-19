@@ -36,10 +36,6 @@ class ViewStylePropertyVisitor(object):
 
     def visit_background(self, _property):
         print('visit_background')
-        print(_property)
-        print(dir(_property))
-        print(_property.background)
-        print(dir(_property.background))
         if _property.background.__class__.__name__ == 'ColorFn':
             self.view_style.style['background-color'] = _property.background.color
         elif _property.background.__class__.__name__ == 'ImageFn':

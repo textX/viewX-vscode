@@ -48,10 +48,11 @@ class ViewXInterpreter(object):
         print('--------------')
 
         print(type(model.__getattribute__('_tx_attrs')))
-        print(dir(model.__getattribute__('_tx_attrs').items()))
+        print(model.__getattribute__('_tx_attrs').items())
         print(dir(view_model.views[0]))
 
         for view in view_model.views:
+            print()
             print("1. {}".format(view.name))
             # loop over model tx properties recursively and match them with defined views
             self.match_view_within_type(model, view)
@@ -62,24 +63,28 @@ class ViewXInterpreter(object):
                 visitor.visit(prop)
             self.styles.append(visitor.view_style)
 
-    def match_view_within_type(self, tx_type, view, clear=True):
+    def match_view_within_type(self, tx_type, view, recursion=False):
         print()
         print('Match view within type')
-        print(tx_type.__class__.__name__, view.name, clear)
-        print(self.traversed_types)
+        print(view.name, tx_type.__class__.__name__, recursion)
         print()
-        if clear:
+        print(self.traversed_types)
+        if not recursion:
             self.traversed_types.clear()
-        if not self.traversed_types.__contains__(tx_type.__class__.__name__):
-            print('traversed not contains {}, add it'.format(tx_type.__class__.__name__))
-            self.traversed_types.append(tx_type.__class__.__name__)
+        # if called by iterating over items recursively (not add_type) or if type not traversed yet
+        if recursion or not self.traversed_types.__contains__(tx_type.__class__.__name__):
+            if not recursion:
+                print('traversed not contains {}, add it'.format(tx_type.__class__.__name__))
+                self.traversed_types.append(tx_type.__class__.__name__)
             print(self.traversed_types)
             # take all defined items within type
             for key, value in tx_type._tx_attrs.items():
                 print("2. {}".format(key))
                 # if defined get the property
                 if value.cont:
+                    print('value.cont')
                     items = tx_type.__getattribute__(key)
+                    print(items)
                     # if non-empty list
                     #
                     # match also single item
@@ -87,37 +92,51 @@ class ViewXInterpreter(object):
                     if items.__class__.__name__ == 'list':
                         first = items[0] if items.__len__() > 0 else None
                         if first and first.__class__.__name__ == view.name:
-                            print('match')
+                            print('match inside view - list')
                             for item in items:
                                 # create json
+                                print()
+                                print(view.name)
+                                print('* create json el')
                                 print(item)
-                                self.elements.update(self.build_graph_element(item, view))
-                            break
-                        else:
-                            print('else')
-                            # iterate through defined tx items
-                            for key, value in first._tx_attrs.items():
-                                print('*****1')
-                                print(first)
+                                print('from')
                                 print(items)
-                                print('..........')
-                                match_found = False
-                                print(value.cont)
-                                for item in items:
-                                    # get tx item property
-                                    item_property = item.__getattribute__(key)
-                                    print('item property')
-                                    print(item_property)
-                                    # if property class match view
-                                    if item_property.__class__.__name__ == 'list':
-                                        if item_property[0].__class__.__name__ == view.name:
-                                            print('match inside view')
-                                            match_found = True
-                                            self.elements.update(self.build_graph_element(item_property[0], view))
-                                    if not match_found:
-                                        print('break')
-                                        break
-
+                                self.elements.update(self.build_graph_element(item, view))
+                        else:
+                            print('* else - not correct type')
+                            print(view)
+                            for item in items:
+                                self.match_view_within_type(item, view, True)
+                            # print('else')
+                            # # iterate through defined tx items
+                            # for key, value in first._tx_attrs.items():
+                            #     print('*****1')
+                            #     print(first)
+                            #     print(items)
+                            #     print('..........')
+                            #     match_found = False
+                            #     print(value.cont)
+                            #     for item in items:
+                            #         # get tx item property
+                            #         item_property = item.__getattribute__(key)
+                            #         print('item property')
+                            #         print(item_property)
+                            #         # if property class match view
+                            #         if item_property.__class__.__name__ == 'list':
+                            #             if item_property[0].__class__.__name__ == view.name:
+                            #                 print('match inside view')
+                            #                 match_found = True
+                            #                 self.elements.update(self.build_graph_element(item_property[0], view))
+                            #         if not match_found:
+                            #             print('break')
+                            #             break
+                    else:
+                        print('single item')
+                else:
+                    print('not value.cont')
+        if recursion:
+            print('* leave recursion')
+            print()
 
     def build_graph_element(self, item, view):
         # print(item.__getattribute__('_tx_attrs').items())
@@ -216,6 +235,7 @@ class ViewXInterpreter(object):
             print("1-3. {}".format(key1))
             # if defined get the property
             if value1.cont:
+                print('value1.cont')
                 items1 = tx_root_type.__getattribute__(key1)
                 print("1-4. {}".format(items1))
                 # if non-empty list
@@ -225,7 +245,7 @@ class ViewXInterpreter(object):
                 if items1.__class__.__name__ == 'list':
                     first1 = items1[0] if items1.__len__() > 0 else None
                     if first1 and view_type.parentView is not None and first1.__class__.__name__ == view_type.parentView.name:
-                        print('match1')
+                        print('match1 - parent type found')
                         for item1 in items1:
                             # find child
                             for key2, value2 in item1._tx_attrs.items():
@@ -239,16 +259,22 @@ class ViewXInterpreter(object):
                                 if items2.__class__.__name__ == 'list':
                                     first2 = items2[0] if items2.__len__() > 0 else None
                                     if first2 and first2.__class__.__name__ == tx_type.__class__.__name__:
-                                        print('match2')
+                                        print('match2 - children type found')
                                         for item2 in items2:
                                             if tx_type.__hash__() == item2.__hash__():
+                                                print('* found exact child {} of type {}'.format(tx_type.__hash__(), tx_type))
                                                 return item1
                                         break
                                 else:
-                                    print('else2')
+                                    print('else2 - child of found parent is single item')
                         break
+                    else:
+                        print('else3 - children not of correct type')
+                        # self.find_view_parent_tx_type(tx_type, view_type, first1)
                 else:
-                    print('else1')
+                    print('else1 - single item')
+            else:
+                print('not value1.cont')
 
 def build_path_from_import(view_model, _import):
     path = os.path.dirname(view_model)
