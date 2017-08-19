@@ -1,0 +1,51 @@
+tximport EntityModel from "./../../tx_samples/entity/entity.tx"
+
+view Type as Diamond
+{
+    background: green
+    label: Type.name
+    {
+        font: 15
+        background: red 0.5
+    }
+    border: green 3 solid
+}
+
+view SimpleType as Vee
+{
+    background: orange
+    label: SimpleType.name
+    {
+        font: 15
+        background: white 0.5
+    }
+    border: black 3 dotted
+}
+
+view Entity as Roundrectangle
+{
+    background: blue
+    border: green 4 double
+    label: Entity.name
+    {
+        background: yellow 0.8
+        font: black 13 italic
+    }
+}
+
+view Property as Line
+{
+    stroke: orange 3 dotted
+    label: Property.name
+    {
+        font: purple 11 oblique
+    }
+    start: Property.parent
+    {
+        arrow: yellow 5 diamond filled
+    }
+    end: Property.type
+    {
+        arrow: red 2 triangle hollow
+    }
+}

@@ -1,0 +1,12 @@
+tximport Workflow from "./../../tx_samples/workflow/workflow.tx"
+
+view Task as Rectangle
+{
+    background: red
+    label: Task.name
+    {
+        font: 15
+        background: yellow 0.5
+    }
+    border: black 3 solid
+}

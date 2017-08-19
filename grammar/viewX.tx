@@ -4,7 +4,7 @@ import viewx_common
 ViewXModel:
     tx_import=Import
     // support wildcard * and separator ;
-    apply_to=ApplyTo
+    (apply_to=ApplyTo)?
     views+=ClassView
 ;
 

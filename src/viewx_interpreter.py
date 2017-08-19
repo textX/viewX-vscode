@@ -149,10 +149,32 @@ class ViewXInterpreter(object):
             end_element = None
             for prop in view.properties:
                 if prop.__class__.__name__ == 'EdgeStartProperty':
+                    print('Start edge property')
+                    print(item)
+                    print(dir(item))
+                    print(prop)
+                    print(prop.classProperties)
+                    print(dir(prop))
                     start_element = self.get_class_property(prop.classProperties, item)
+                    print(start_element)
+                    print(dir(start_element))
+                    print(type(start_element))
+                    print(self.elements)
+                    print(start_element.__hash__())
                     start_element = self.elements[start_element.__hash__()]
                 elif prop.__class__.__name__ == 'EdgeEndProperty':
+                    print('End edge property')
+                    print(item)
+                    print(dir(item))
+                    print(prop)
+                    print(prop.classProperties)
+                    print(dir(prop))
                     end_element = self.get_class_property(prop.classProperties, item)
+                    print(end_element)
+                    print(dir(end_element))
+                    print(type(end_element))
+                    print(self.elements)
+                    print(end_element.__hash__())
                     end_element = self.elements[end_element.__hash__()]
                 # when both start and end nodes are defined
                 if start_element is not None and end_element is not None:

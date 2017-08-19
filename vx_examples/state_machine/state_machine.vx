@@ -1,4 +1,4 @@
-tximport StateMachine from "./../tx_samples/state_machine/state_machine.tx"
+tximport StateMachine from "./../../tx_samples/state_machine/state_machine.tx"
 
 apply to "*.sm;state*.*"
 
