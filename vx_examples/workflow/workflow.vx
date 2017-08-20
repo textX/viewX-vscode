@@ -9,6 +9,10 @@ view Task as Rectangle
         background: yellow 0.5
     }
     border: black 3 solid
+    link from: this
+    {
+        arrow: blue 5 diamond filled
+    }
     link to: Task.next(Task)
     {
         arrow: red 2 triangle hollow

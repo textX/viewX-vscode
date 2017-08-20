@@ -86,8 +86,6 @@ class LinkStylePropertyVisitor(object):
     
     def __init__(self, view, link_from, link_to):
         print('link style property visitor')
-        print(link_to)
-        print(dir(link_to))
         self.view_style = ViewStyle('edge.{}_to_{}'.format(view.name.lower(), link_to.target_class.name.lower()))
         self.visit(link_from)
         self.visit(link_to)

@@ -49,16 +49,21 @@ ClassLabel:
 // edge related rules
 
 EdgeProperty:
-    EdgeStartProperty | EdgeEndProperty | LinkToProperty
+    EdgeStartProperty | EdgeEndProperty | LinkFromProperty | LinkToProperty
 ;
 
 EdgeStartProperty:
-    'start' ':' classView=[ClassView] ('.' classProperties+=ID['.']) // this class property needs to be defined here as ClassView
+    'from' ':' classView=[ClassView] ('.' classProperties+=ID['.']) // this class property needs to be defined here as ClassView
     ('{' arrowProperties+=ArrowProperty '}')?
 ;
 
 EdgeEndProperty:
-    'end' ':' classView=[ClassView] ('.' classProperties+=ID['.'])
+    'to' ':' classView=[ClassView] ('.' classProperties+=ID['.'])
+    ('{' arrowProperties+=ArrowProperty '}')?
+;
+
+LinkFromProperty:
+    'link' 'from' ':' ('this' | classView=[ClassView])?
     ('{' arrowProperties+=ArrowProperty '}')?
 ;
 
