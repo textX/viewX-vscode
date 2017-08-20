@@ -31,11 +31,18 @@ class ViewXInterpreter(object):
     ViewX model interpreter.
     """
     def __init__(self, viewmodel):
-        self.view_model = viewmodel
-        self.elements = {}
-        self.styles = []
-        self.traversed_types = []
-        self.existing_parents = []
+        self.view_model = viewmodel # assign view model when initialized
+        self.model = None # different models can be interpreted with same viewmodel
+        self.elements = {} # all cytoscape.js graph elements
+        self.styles = [] # style definitions for elements
+        self.traversed_types = [] # visited types during recursive search algorithm
+        self.existing_parents = [] # used when multiple sources reference same element as inside
+        self.links = {} # store links when not all elements have been created yet
+        # dictionary of dictionaries
+        # {type1 : {source1 : [dst1, dst2]},
+        #           {source2 : [dst3, dst4]},
+        #  type2 : {source3 : [dst5]},
+        #  type3 : {source4 : [dst6, dst7, dst8]}}
 
     def interpret(self, model):
         """
@@ -61,9 +68,30 @@ class ViewXInterpreter(object):
             # generate view styles
             print('generate view styles')
             visitor = cre.ViewStylePropertyVisitor(view)
+            link_from = None
+            link_to = None
             for prop in view.properties:
                 visitor.visit(prop)
+                if prop.__class__.__name__ == 'LinkFromProperty':
+                    link_from = prop
+                elif prop.__class__.__name__ == 'LinkToProperty':
+                    link_to = prop
+                    print()
+                    print('++++ Contains LinkToProperty +++++++')
+                    print(link_to)
+                    print(dir(link_to))
+                    print(model)
+                    print(dir(model))
             self.styles.append(visitor.view_style)
+            # check if view has link to it's properties
+            if link_from is not None or link_to is not None:
+                link_visitor = cre.LinkStylePropertyVisitor(view, link_from, link_to)
+                self.styles.append(link_visitor.view_style)
+
+        print()
+        print('resolve links')
+        self.resolve_links(model)
+        self.create_links()
 
     def match_view_within_type(self, tx_type, view, recursion=False):
         print()
@@ -75,9 +103,9 @@ class ViewXInterpreter(object):
             self.traversed_types.clear()
         # if called by iterating over items recursively (not add_type) or if type not traversed yet
         if recursion or not self.traversed_types.__contains__(tx_type.__class__.__name__):
-            if not recursion:
-                print('traversed not contains {}, add it'.format(tx_type.__class__.__name__))
-                self.traversed_types.append(tx_type.__class__.__name__)
+            # if not recursion:
+            print('traversed not contains {}, add it'.format(tx_type.__class__.__name__))
+            self.traversed_types.append(tx_type.__class__.__name__)
             print(self.traversed_types)
             # take all defined items within type
             for key, value in tx_type._tx_attrs.items():
@@ -205,6 +233,23 @@ class ViewXInterpreter(object):
         else:
             graph_element = cy.Node(item.__hash__())
         
+        link_to_property = None
+        for prop in view.properties:
+            if prop.__class__.__name__ == 'LinkToProperty':
+                link_to_property = prop
+                break
+        
+        if link_to_property is not None:
+            print()
+            print('*** link to property')
+            print(link_to_property)
+            print(dir(link_to_property))
+            property_links = self.get_class_property(link_to_property.class_properties, item)
+            print(property_links)
+            print('------')
+            print(item.__class__.__name__)
+            self.update_links(item, property_links)         
+
         graph_element.add_data('label', element_label)
         
         # add parent if defined
@@ -231,20 +276,27 @@ class ViewXInterpreter(object):
     
 
     def get_class_property(self, class_properties, starting_item):
+        """
+        Resolve single item properties.
+        """
         result_property = starting_item
         for class_prop in class_properties:
             if hasattr(result_property, class_prop):
                 result_property = result_property.__getattribute__(class_prop)
         return result_property
 
-    def item_contains_property_by_structure(self, class_properties, starting_item, property_to_find):
+    def item_contains_property_by_structure(self, class_properties, starting_item, item_to_find):
+        """
+        Resolve class properties and check whether item_to_find can be found within starting_item
+        following the class_properties structure.
+        """
         result_property = starting_item
         if class_properties.__len__() == 0:
             print()
             print('found property by structure!!!!!!')
             print('result_property - {}'.format(result_property.__hash__()))
-            print('property_to_find - {}'.format(property_to_find.__hash__()))
-            return result_property.__hash__() == property_to_find.__hash__()
+            print('item_to_find - {}'.format(item_to_find.__hash__()))
+            return result_property.__hash__() == item_to_find.__hash__()
 
         if result_property.__class__.__name__ == 'list':
             print()
@@ -256,7 +308,7 @@ class ViewXInterpreter(object):
                 for class_prop in class_properties:
                     if hasattr(item, class_prop):
                         result_property = item.__getattribute__(class_prop)
-                        if self.item_contains_property_by_structure(class_properties[1:], result_property, property_to_find):
+                        if self.item_contains_property_by_structure(class_properties[1:], result_property, item_to_find):
                             return True
         else:
             print()
@@ -266,7 +318,7 @@ class ViewXInterpreter(object):
             for class_prop in class_properties:
                 if hasattr(result_property, class_prop):
                     result_property = result_property.__getattribute__(class_prop)
-                    if self.item_contains_property_by_structure(class_properties[1:], result_property, property_to_find):
+                    if self.item_contains_property_by_structure(class_properties[1:], result_property, item_to_find):
                         return True
         return False
 
@@ -346,6 +398,100 @@ class ViewXInterpreter(object):
             else:
                 print('not value1.cont')
 
+    def update_links(self, item, item_links):
+        print('////// update link //////')
+        link_dict = self.links.get(item.__class__.__name__, {})
+        print(link_dict)
+        print(item)
+        print(item_links)
+        link_dict.update({item.__hash__() : item_links})
+        print(link_dict)
+        self.links[item.__class__.__name__] = link_dict
+        
+
+    def resolve_links(self, tx_type, recursion=False):
+        print(tx_type, recursion)
+        print(dir(tx_type))
+        print()
+        print(self.traversed_types)
+        if not recursion:
+            self.traversed_types.clear()
+        # if called by iterating over items recursively (not add_type) or if type not traversed yet
+        if recursion or not self.traversed_types.__contains__(tx_type.__class__.__name__):
+            # if not recursion:
+            print('traversed not contains {}, add it'.format(tx_type.__class__.__name__))
+            self.traversed_types.append(tx_type.__class__.__name__)
+            print(self.traversed_types)
+
+            link_dict = self.links.get(tx_type.__class__.__name__, {})
+            print('link_dict - {}'.format(link_dict))
+            if link_dict.__len__() > 0:
+                # update
+                print('update links')
+                print()
+                for key_hash, value_links in link_dict.items():
+                    print(link_dict)
+                    print(dir(link_dict))
+                    resolved = []
+                    for unresolved in value_links:
+                        print(unresolved)
+                        if unresolved == tx_type:
+                            print('match')
+                            print('replace hash - {}'.format(tx_type.__hash__()))
+                            resolved.append(tx_type.__hash__())
+                        else:
+                            print('unresolved hash - {}'.format(tx_type.__hash__()))
+                            print('not found hash - {}'.format(unresolved.__hash__()))
+                            resolved.append(unresolved)
+                    link_dict[key_hash] = resolved
+            else:
+                # take all defined items within type
+                for key, value in tx_type._tx_attrs.items():
+                    print("2. {}".format(key))
+                    # if defined get the property
+                    if value.cont:
+                        print('value.cont')
+                        items = tx_type.__getattribute__(key)
+                        print(items)
+                        print(dir(items))
+                        if items.__class__.__name__ == 'list':
+                            print('resolve link in list')
+                            for item in items:
+                                print(item)
+                                self.resolve_links(item, True)
+                        else:
+                            print('single item')
+                            if hasattr(items, '_tx_peg_rule'):
+                                self.resolve_links(items, True)
+                    else:
+                        print('not value.cont')
+
+
+    def create_links(self):
+        print('create links')
+        new_edges = []
+        for key_type, value_link_dict in self.links.items():
+            for key_el_hash, value_element in self.elements.items():
+                print('{} : {}'.format(key_el_hash, value_element))
+                linked = value_link_dict.get(key_el_hash, [])
+                print('linked')
+                print(linked)
+                for target_hash in linked:
+                    print(target_hash)
+                    start_element = self.elements.get(key_el_hash, None)
+                    end_element = self.elements.get(target_hash, None)
+                    print(start_element)
+                    print(end_element)
+                    if start_element is not None and end_element is not None:
+                        new_edge = cy.Edge(start_element, end_element)
+                        print('//]\\\\\'')
+                        print(dir(end_element))
+                        new_edge.add_class(key_type.lower() + '_to_' + end_element.classes.split(' ')[0])
+                        new_edges.append(new_edge)
+        for edge in new_edges:
+            self.elements[edge.__hash__()] = edge
+
+
 def build_path_from_import(view_model, _import):
     path = os.path.dirname(view_model)
     _import = _import[1:-1] # remove ""
@@ -385,5 +531,10 @@ if __name__ == '__main__':
         print('styles:')
         for style in viewx_interpreter.styles:
             print(style.to_json())
+
+        print()
+        print('links:')
+        for lk, lv in viewx_interpreter.links.items():
+            print('{} : {}'.format(lk, lv))
 
         preview_generator.generate(view_model, target_model, viewx_interpreter)

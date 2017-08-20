@@ -41,8 +41,6 @@ class ViewStylePropertyVisitor(object):
         elif _property.background.__class__.__name__ == 'ImageFn':
             self.view_style.style['background-image'] = _property.background.image
             self.view_style.style['background-fit'] = 'cover cover'
-        else:
-            pass
     
     def visit_border(self, _property):
         print('visit_border')
@@ -72,6 +70,39 @@ class ViewStylePropertyVisitor(object):
     def visit_edge_property(self, _property):
         print('visit_edge_property')
         direction = 'source' if _property.__class__.__name__ == 'EdgeStartProperty' else 'target'
+        for arrow_property in _property.arrowProperties:
+            self.view_style.style['curve-style'] = 'bezier' # needed to enable arrow shapes
+            self.view_style.style['arrow-scale'] = arrow_property.scale
+            self.view_style.style['{}-arrow-shape'.format(direction)] = arrow_property.shape if arrow_property.shape else 'none'
+            self.view_style.style['{}-arrow-fill'.format(direction)] = arrow_property.fill if arrow_property.fill else 'filled'
+            self.view_style.style['{}-arrow-color'.format(direction)] = arrow_property.color if arrow_property.color else 'black'
+
+    def visit_default(self, _property):
+        pass
+
+
+class LinkStylePropertyVisitor(object):
+    view_style = None
+    
+    def __init__(self, view, link_from, link_to):
+        print('link style property visitor')
+        print(link_to)
+        print(dir(link_to))
+        self.view_style = ViewStyle('edge.{}_to_{}'.format(view.name.lower(), link_to.target_class.name.lower()))
+        self.visit(link_from)
+        self.visit(link_to)
+
+    def visit(self, _property):
+        switch_visit = {
+            'LinkFromProperty': self.visit_link_property,
+            'LinkToProperty': self.visit_link_property
+        }
+        visit = switch_visit.get(_property.__class__.__name__, self.visit_default)
+        visit(_property)
+
+    def visit_link_property(self, _property):
+        print('visit_link_property')
+        direction = 'source' if _property.__class__.__name__ == 'LinkFromProperty' else 'target'
         for arrow_property in _property.arrowProperties:
             self.view_style.style['curve-style'] = 'bezier' # needed to enable arrow shapes
             self.view_style.style['arrow-scale'] = arrow_property.scale

@@ -8,7 +8,8 @@ class Element(object):
         self.group = 'nodes' # 'nodes' for a node, 'edges' for an edge
         self.data = { # element data (put json serialisable dev data here)
             # define 'source' and 'target' for an edge
-            'id' : uuid.uuid1() if id is None else id
+            # 'id' : uuid.uuid1() if id is None else id
+            'id' : self.__hash__() if id is None else id
         }
         self.scratch = {} # scratchpad data (usually temp or nonserialisable data)
         self.selected = False # whether the element is selected (default false)
@@ -62,9 +63,6 @@ def serialize_json(obj):
         json = {}
         json.update(vars(obj))
     else:
-        print('else')
-        print(obj)
-        print(dir(obj))
         json = obj.__str__()
     return json
 
