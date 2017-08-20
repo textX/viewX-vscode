@@ -68,18 +68,15 @@ class ViewXInterpreter(object):
             # generate view styles
             print('generate view styles')
             visitor = cre.ViewStylePropertyVisitor(view)
-            link_from = None
-            link_to = None
+            property_link = None
             for prop in view.properties:
                 visitor.visit(prop)
-                if prop.__class__.__name__ == 'LinkFromProperty':
-                    link_from = prop
-                elif prop.__class__.__name__ == 'LinkToProperty':
-                    link_to = prop
+                if prop.__class__.__name__ == 'PropertyLink':
+                    property_link = prop
             self.styles.append(visitor.view_style)
             # check if view has link to it's properties
-            if link_from is not None or link_to is not None:
-                link_visitor = cre.LinkStylePropertyVisitor(view, link_from, link_to)
+            if property_link is not None:
+                link_visitor = cre.LinkStylePropertyVisitor(view, property_link)
                 self.styles.append(link_visitor.view_style)
 
         # create property links if any
@@ -174,15 +171,15 @@ class ViewXInterpreter(object):
         else:
             graph_element = cy.Node(item.__hash__())
         
-        link_to_property = None
+        property_link = None
         for prop in view.properties:
-            if prop.__class__.__name__ == 'LinkToProperty':
-                link_to_property = prop
+            if prop.__class__.__name__ == 'PropertyLink':
+                property_link = prop
                 break
         
         # if item has defined links to it's properties, store them for later creating
-        if link_to_property is not None:
-            property_links = self.get_all_resolved_properties(link_to_property.class_properties, item)
+        if property_link is not None:
+            property_links = self.get_all_resolved_properties(property_link.link_to.class_properties, item)
             self.update_links(item, property_links)         
 
         graph_element.add_data('label', element_label)
@@ -260,41 +257,27 @@ class ViewXInterpreter(object):
 
         resolved_properties = []
 
-        print()
-        print('get_all_resolved_properties')
-        print(resolved_properties)
-        print(tx_item)
-        print(class_properties)
-
         if result_property.__class__.__name__ == 'list':
-            print('list')
             # try for each item because not every item has to have defined all properties
             for item in result_property:
                 for class_prop in class_properties:
                     if hasattr(item, class_prop):
                         result_property = item.__getattribute__(class_prop)
-                        print('result_property - {}'.format(result_property))
                         # if property found, take following class properties and pass them recursively
                         properties = self.get_all_resolved_properties(class_properties[1:], result_property)
-                        print('properties - {}'.format(properties))
                         if properties.__class__.__name__ != 'list':
                             properties = [properties]    
                         resolved_properties.extend(properties)
         else:
-            print('single')
             # if single item, resolve property directly
             for class_prop in class_properties:
                 if hasattr(result_property, class_prop):
                     result_property = result_property.__getattribute__(class_prop)
-                    print('result_property - {}'.format(result_property))
                     properties = self.get_all_resolved_properties(class_properties[1:], result_property)
-                    print('properties - {}'.format(properties))
                     if properties.__class__.__name__ != 'list':
                         properties = [properties]    
                     resolved_properties.extend(properties)
 
-        print('returning...')
-        print('resolved_properties - {}'.format(resolved_properties))
         return resolved_properties
 
 

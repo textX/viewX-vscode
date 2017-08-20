@@ -17,9 +17,12 @@ view State as Rectangle
         background: yellow 0.8
         font: purple 13 italic
     }
-    link to: State.transitions.event(Event)
+    link
     {
-        arrow: red 2 triangle hollow
+        to: State.transitions.event(Event)
+        {
+            arrow: red 2 triangle hollow
+        }
     }
 }
 

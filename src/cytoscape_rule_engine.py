@@ -9,29 +9,15 @@ node_border = ('border-width', 'border-style', 'border-color', 'border-opacity')
 
 node_border_style = ('solid', 'dotted', 'dashed', 'double')
 
-class ViewStylePropertyVisitor(object):
-    view_style = None
-    
+edge_starts = ['EdgeStartProperty', 'LinkFromProperty']
+
+class PropertyVisitor(object):
     def __init__(self, view):
-        if view.shape in edge_shapes:
-            self.view_style = ViewStyle('edge.{}'.format(view.name.lower()))
-        elif view.shape.lower() in node_shapes:
-            self.view_style = ViewStyle('node.{}'.format(view.name.lower()))
-            self.view_style.style['shape'] = view.shape.lower()
-        else:
-            print('root level style properties')
-            self.view_style = ViewStyle('root')
+        self.view_style = None
+        self.switch_visit = {}
 
     def visit(self, _property):
-        switch_visit = {
-            'BackgroundProperty': self.visit_background,
-            'BorderProperty': self.visit_border,
-            'StrokeProperty': self.visit_stroke,
-            'Label': self.visit_label,
-            'EdgeStartProperty': self.visit_edge_property,
-            'EdgeEndProperty': self.visit_edge_property
-        }
-        visit = switch_visit.get(_property.__class__.__name__, self.visit_default)
+        visit = self.switch_visit.get(_property.__class__.__name__, self.visit_default)
         visit(_property)
 
     def visit_background(self, _property):
@@ -69,7 +55,7 @@ class ViewStylePropertyVisitor(object):
 
     def visit_edge_property(self, _property):
         print('visit_edge_property')
-        direction = 'source' if _property.__class__.__name__ == 'EdgeStartProperty' else 'target'
+        direction = 'source' if _property.__class__.__name__ in edge_starts else 'target'
         for arrow_property in _property.arrowProperties:
             self.view_style.style['curve-style'] = 'bezier' # needed to enable arrow shapes
             self.view_style.style['arrow-scale'] = arrow_property.scale
@@ -81,32 +67,42 @@ class ViewStylePropertyVisitor(object):
         pass
 
 
-class LinkStylePropertyVisitor(object):
-    view_style = None
-    
-    def __init__(self, view, link_from, link_to):
-        print('link style property visitor')
-        self.view_style = ViewStyle('edge.{}_to_{}'.format(view.name.lower(), link_to.target_class.name.lower()))
-        self.visit(link_from)
-        self.visit(link_to)
-
-    def visit(self, _property):
-        switch_visit = {
-            'LinkFromProperty': self.visit_link_property,
-            'LinkToProperty': self.visit_link_property
+class ViewStylePropertyVisitor(PropertyVisitor):
+    def __init__(self, view):
+        super().__init__(view)
+        
+        self.switch_visit = {
+            'BackgroundProperty': self.visit_background,
+            'BorderProperty': self.visit_border,
+            'StrokeProperty': self.visit_stroke,
+            'Label': self.visit_label,
+            'EdgeStartProperty': self.visit_edge_property,
+            'EdgeEndProperty': self.visit_edge_property
         }
-        visit = switch_visit.get(_property.__class__.__name__, self.visit_default)
-        visit(_property)
 
-    def visit_link_property(self, _property):
-        print('visit_link_property')
-        direction = 'source' if _property.__class__.__name__ == 'LinkFromProperty' else 'target'
-        for arrow_property in _property.arrowProperties:
-            self.view_style.style['curve-style'] = 'bezier' # needed to enable arrow shapes
-            self.view_style.style['arrow-scale'] = arrow_property.scale
-            self.view_style.style['{}-arrow-shape'.format(direction)] = arrow_property.shape if arrow_property.shape else 'none'
-            self.view_style.style['{}-arrow-fill'.format(direction)] = arrow_property.fill if arrow_property.fill else 'filled'
-            self.view_style.style['{}-arrow-color'.format(direction)] = arrow_property.color if arrow_property.color else 'black'
+        if view.shape in edge_shapes:
+            self.view_style = ViewStyle('edge.{}'.format(view.name.lower()))
+        elif view.shape.lower() in node_shapes:
+            self.view_style = ViewStyle('node.{}'.format(view.name.lower()))
+            self.view_style.style['shape'] = view.shape.lower()
+        else:
+            print('root level style properties')
+            self.view_style = ViewStyle('root')
 
-    def visit_default(self, _property):
-        pass
+
+class LinkStylePropertyVisitor(PropertyVisitor):
+    def __init__(self, view, property_link):
+        super().__init__(view)
+        
+        self.switch_visit = {
+            'LinkFromProperty': self.visit_edge_property,
+            'LinkToProperty': self.visit_edge_property,
+            'StrokeProperty': self.visit_stroke,
+            'Label': self.visit_label
+        }
+
+        self.view_style = ViewStyle('edge.{}_to_{}'.format(view.name.lower(), property_link.link_to.target_class.name.lower()))
+        self.visit(property_link.link_from)
+        self.visit(property_link.link_to)
+        for prop in property_link.properties:
+            self.visit(prop)

@@ -49,7 +49,7 @@ ClassLabel:
 // edge related rules
 
 EdgeProperty:
-    EdgeStartProperty | EdgeEndProperty | LinkFromProperty | LinkToProperty
+    EdgeStartProperty | EdgeEndProperty | PropertyLink
 ;
 
 EdgeStartProperty:
@@ -62,13 +62,25 @@ EdgeEndProperty:
     ('{' arrowProperties+=ArrowProperty '}')?
 ;
 
+PropertyLink:
+    'link' '{' 
+        (link_from=LinkFromProperty)?
+        link_to=LinkToProperty?
+        properties*=LinkProperties
+    '}'
+;
+
+LinkProperties:
+    StrokeProperty | Label
+;
+
 LinkFromProperty:
-    'link' 'from' ':' ('this' | classView=[ClassView])?
+    'from' ':' ('this' | classView=[ClassView])?
     ('{' arrowProperties+=ArrowProperty '}')?
 ;
 
 LinkToProperty:
-    'link' 'to' ':' classView=[ClassView] ('.' class_properties+=ID['.']) '(' target_class=[ClassView] ')'
+    'to' ':' classView=[ClassView] ('.' class_properties+=ID['.']) '(' target_class=[ClassView] ')'
     ('{' arrowProperties+=ArrowProperty '}')?
 ;
 
