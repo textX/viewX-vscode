@@ -43,7 +43,7 @@ class PropertyVisitor(object):
     def visit_label(self, _property):
         print('visit_label')
         self.view_style.style['label'] = 'data(label)'
-        for label_property in _property.labelProperties:
+        for label_property in _property.label_properties:
             if label_property.__class__.__name__ == 'LabelFont':
                 self.view_style.style['font-size'] = label_property.size
                 self.view_style.style['font-style'] = label_property.style if label_property.style else 'normal'
@@ -56,7 +56,7 @@ class PropertyVisitor(object):
     def visit_edge_property(self, _property):
         print('visit_edge_property')
         direction = 'source' if _property.__class__.__name__ in edge_starts else 'target'
-        for arrow_property in _property.arrowProperties:
+        for arrow_property in _property.arrow_properties:
             self.view_style.style['curve-style'] = 'bezier' # needed to enable arrow shapes
             self.view_style.style['arrow-scale'] = arrow_property.scale
             self.view_style.style['{}-arrow-shape'.format(direction)] = arrow_property.shape if arrow_property.shape else 'none'
@@ -101,7 +101,7 @@ class LinkStylePropertyVisitor(PropertyVisitor):
             'Label': self.visit_label
         }
 
-        self.view_style = ViewStyle('edge.{}_to_{}'.format(view.name.lower(), property_link.link_to.target_class.name.lower()))
+        self.view_style = ViewStyle('edge.{}-{}'.format(view.name.lower(), '-'.join(property_link.link_to.class_properties)))
         self.visit(property_link.link_from)
         self.visit(property_link.link_to)
         for prop in property_link.properties:

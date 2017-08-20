@@ -15,7 +15,7 @@ view Task as Rectangle
         {
             arrow: blue 5 diamond filled
         }
-        to: Task.next(Task)
+        to: Task.next
         {
             arrow: red 2 triangle hollow
         }

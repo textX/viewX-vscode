@@ -38,11 +38,12 @@ class ViewXInterpreter(object):
         self.traversed_types = [] # visited types during recursive search algorithm
         self.existing_parents = [] # used when multiple sources reference same element as inside
         self.links = {} # store links when not all elements have been created yet
-        # dictionary of dictionaries
-        # {type1 : {source1 : [dst1, dst2]},
-        #           {source2 : [dst3, dst4]},
-        #  type2 : {source3 : [dst5]},
-        #  type3 : {source4 : [dst6, dst7, dst8]}}
+        # dictionary of dictionaries of dictionaries of target element (hash code) and list of properties (tuples)
+        # {type1 : {source1 : {dst1 : [(prop1, value1), (prop2, value2)]}, {dst2: [(prop3, value3)]} },
+        #           {source2 : {dst3 : [(prop4, value4)]}, {dst4 : [(prop5, value5)} },
+        #  type2 : {source3 : [{dst5: [(prop6, value6), (prop7, value7)]} },
+        #  ... 
+        # }
 
     def interpret(self, model):
         """
@@ -151,26 +152,28 @@ class ViewXInterpreter(object):
         else:
             if label_property.__class__.__name__ == 'ClassLabel':
                 # resolve item name
-                element_label = self.get_class_property(label_property.classProperties, item)
+                element_label = self.get_class_property(label_property.class_properties, item)
             else:
                 element_label = label_property
-        print(element_label)
+
+        # if element is edge        
         if is_edge:
             start_element = None
             end_element = None
             for prop in view.properties:
                 if prop.__class__.__name__ == 'EdgeStartProperty':
-                    start_element = self.get_class_property(prop.classProperties, item)
+                    start_element = self.get_class_property(prop.class_properties, item)
                     start_element = self.elements[start_element.__hash__()]
                 elif prop.__class__.__name__ == 'EdgeEndProperty':
-                    end_element = self.get_class_property(prop.classProperties, item)
+                    end_element = self.get_class_property(prop.class_properties, item)
                     end_element = self.elements[end_element.__hash__()]
                 # when both start and end nodes are defined
                 if start_element is not None and end_element is not None:
                     graph_element = cy.Edge(start_element, end_element, item.__hash__())
-        else:
+        else: # element is node
             graph_element = cy.Node(item.__hash__())
         
+        # check if property link is defined (need to store links and create them later)
         property_link = None
         for prop in view.properties:
             if prop.__class__.__name__ == 'PropertyLink':
@@ -179,13 +182,47 @@ class ViewXInterpreter(object):
         
         # if item has defined links to it's properties, store them for later creating
         if property_link is not None:
+            # resolve links to properties
             property_links = self.get_all_resolved_properties(property_link.link_to.class_properties, item)
-            self.update_links(item, property_links)         
+            # transform in dictionary (hash_code : array of properties)
+            transformed_links = {link.__hash__(): [] for link in property_links}
+
+            # add property link classes as first property in each link
+            for value_props in transformed_links.values():
+                value_props.append(('class', '{}-{}'.format(property_link.link_to.class_view.name.lower(),
+                                    '-'.join(property_link.link_to.class_properties))))
+
+            # if property link label is defined
+            label = None
+            for prop in property_link.properties:
+                if prop.__class__.__name__ == 'Label':
+                    label = prop
+                    break
+            link_labels = []
+            if label:
+                if label.label.__class__.__name__ == 'ClassLabel':
+                    unresolved_properties = []
+                    # remove resolved properties, should leave only single item properties
+                    for prop in label.label.class_properties:
+                        if not property_link.link_to.class_properties.__contains__(prop):
+                            unresolved_properties.append(prop)
+                    # resolve link labels
+                    link_labels = [self.get_class_property(unresolved_properties, link) for link in property_links]
+                    # add labels to link properties
+                    for value_props, link_label in zip(transformed_links.values(), link_labels):
+                        value_props.append(('label', link_label))
+                else:
+                    # update label as string
+                    link_label = label.label
+                    for value_props in transformed_links.values():
+                        value_props.append(('label', link_label))
+
+            self.update_links(item, transformed_links)         
 
         graph_element.add_data('label', element_label)
         
         # add parent if defined
-        if view.parentView is not None:
+        if view.parent_view is not None:
             # if view.conditional_parent is not None:
             #     self.existing_parents.clear()
             #     parent = None
@@ -212,9 +249,13 @@ class ViewXInterpreter(object):
         Resolve single item properties.
         """
         result_property = starting_item
+        print('result_property - {}'.format(result_property))
+        print('class_properties - {}'.format(class_properties))
         for class_prop in class_properties:
             if hasattr(result_property, class_prop):
                 result_property = result_property.__getattribute__(class_prop)
+        print('return')
+        print(result_property)
         return result_property
 
     def item_contains_property_by_structure(self, class_properties, starting_item, item_to_find):
@@ -305,7 +346,7 @@ class ViewXInterpreter(object):
                 #
                 if items1.__class__.__name__ == 'list':
                     first1 = items1[0] if items1.__len__() > 0 else None
-                    if first1 and view_type.parentView is not None and first1.__class__.__name__ == view_type.parentView.name:
+                    if first1 and view_type.parent_view is not None and first1.__class__.__name__ == view_type.parent_view.name:
                         print('match1 - parent type found')
                         for item1 in items1:
                             # if inside condition defined
@@ -362,7 +403,7 @@ class ViewXInterpreter(object):
         and all links are defined by their source item's hash code in inner dictionary.
         """
         link_dict = self.links.get(item.__class__.__name__, {})
-        link_dict.update({item.__hash__() : [link.__hash__() for link in item_links]})
+        link_dict.update({item.__hash__() : item_links})
         self.links[item.__class__.__name__] = link_dict
 
     def create_links(self):
@@ -376,17 +417,17 @@ class ViewXInterpreter(object):
             for key_el_hash, value_element in self.elements.items():
                 # linked properties (hash codes)
                 linked = value_link_dict.get(key_el_hash, [])
-                print()
-                print(self.links)
-                print('linked')
-                print(linked)
-                print()
-                for target_hash in linked:
+                for target_hash, link_props in linked.items():
                     start_element = self.elements.get(key_el_hash, None)
                     end_element = self.elements.get(target_hash, None)
                     if start_element is not None and end_element is not None:
                         new_edge = cy.Edge(start_element, end_element)
-                        new_edge.add_class(key_type.lower() + '_to_' + end_element.classes.split(' ')[0])
+                        # skip first, first is always class name for property link
+                        for prop_key, prop_value in link_props[1:]:
+                            new_edge.add_data(prop_key, prop_value)
+                        # old class, removed type, property name instead
+                        # new_edge.add_class('{}-{}'.format(key_type.lower(), end_element.classes.split(' ')[0]))
+                        new_edge.add_class(link_props[0][1])
                         new_edges.append(new_edge)
         # after creation add them to the elements
         for edge in new_edges:

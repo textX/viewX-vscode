@@ -5,7 +5,7 @@ ViewXModel:
     tx_import=Import
     // support wildcard * and separator ;
     (apply_to=ApplyTo)?
-    views+=ClassView
+    views+=class_view
 ;
 
 Import:
@@ -20,8 +20,8 @@ ApplyTo:
     'apply' 'to' regex=/"((\w|\*(?!\*))+\.(\w|\*(?!\*))+)(;(\w|\*(?!\*))+\.(\w|\*(?!\*))+)*"/
 ;
 
-ClassView:
-    'view' name=ID 'as' shape=Shape ('inside' parentView=[ClassView] ('where' 'this' '=' conditional_parent=[ClassView] ('.' class_properties+=ID['.']))?)?
+class_view:
+    'view' name=ID 'as' shape=Shape ('inside' parent_view=[class_view] ('where' 'this' '=' conditional_parent=[class_view] ('.' class_properties+=ID['.']))?)?
     ('{' properties+=ViewProperty '}')?
 ;
 
@@ -39,11 +39,11 @@ ShapeProperty:
 ;
 
 Label:
-    'label' ':' (label=STRING | label=ClassLabel) ('{' labelProperties+=LabelProperty '}')?
+    'label' ':' (label=STRING | label=ClassLabel) ('{' label_properties+=LabelProperty '}')?
 ;
 
 ClassLabel:
-    classView=[ClassView] ('.' classProperties+=ID['.'])?
+    class_view=[class_view] ('.' class_properties+=ID['.'])?
 ;
 
 // edge related rules
@@ -53,13 +53,13 @@ EdgeProperty:
 ;
 
 EdgeStartProperty:
-    'from' ':' classView=[ClassView] ('.' classProperties+=ID['.']) // this class property needs to be defined here as ClassView
-    ('{' arrowProperties+=ArrowProperty '}')?
+    'from' ':' class_view=[class_view] ('.' class_properties+=ID['.']) // this class property needs to be defined here as class_view
+    ('{' arrow_properties+=ArrowProperty '}')?
 ;
 
 EdgeEndProperty:
-    'to' ':' classView=[ClassView] ('.' classProperties+=ID['.'])
-    ('{' arrowProperties+=ArrowProperty '}')?
+    'to' ':' class_view=[class_view] ('.' class_properties+=ID['.'])
+    ('{' arrow_properties+=ArrowProperty '}')?
 ;
 
 PropertyLink:
@@ -75,13 +75,13 @@ LinkProperties:
 ;
 
 LinkFromProperty:
-    'from' ':' ('this' | classView=[ClassView])?
-    ('{' arrowProperties+=ArrowProperty '}')?
+    'from' ':' ('this' | class_view=[class_view])?
+    ('{' arrow_properties+=ArrowProperty '}')?
 ;
 
 LinkToProperty:
-    'to' ':' classView=[ClassView] ('.' class_properties+=ID['.']) '(' target_class=[ClassView] ')'
-    ('{' arrowProperties+=ArrowProperty '}')?
+    'to' ':' class_view=[class_view] ('.' class_properties+=ID['.'])
+    ('{' arrow_properties+=ArrowProperty '}')?
 ;
 
 ArrowProperty:
