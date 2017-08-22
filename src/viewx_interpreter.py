@@ -61,18 +61,13 @@ class ViewXInterpreter(object):
         print(model.__getattribute__('_tx_attrs').items())
         print(dir(view_model.views[0]))
 
-        print('stylesheet')
-        print(view_model.stylesheet)
-        print(dir(view_model.stylesheet))
-        print(view_model.stylesheet.style)
-
         for view in view_model.views:
             print()
             print("1. {}".format(view.name))
             # loop over model tx properties recursively and match them with defined views
             self.match_view_within_type(model, view)
 
-            if view_model.stylesheet.style is None:
+            if view_model.stylesheet is None:
                 # generate view styles
                 print('generate view styles')
                 visitor = cre.ViewStylePropertyVisitor(view)
