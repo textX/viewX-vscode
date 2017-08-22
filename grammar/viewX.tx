@@ -1,10 +1,11 @@
-import viewx_label
-import viewx_common
+import modules.viewx_label
+import modules.viewx_common
 
 ViewXModel:
     tx_import=Import
     // support wildcard * and separator ;
     (apply_to=ApplyTo)?
+    (stylesheet=Stylesheet)?
     views+=class_view
 ;
 
@@ -18,6 +19,10 @@ TxPathRegEx:
 
 ApplyTo:
     'apply' 'to' regex=/"((\w|\*(?!\*))+\.(\w|\*(?!\*))+)(;(\w|\*(?!\*))+\.(\w|\*(?!\*))+)*"/
+;
+
+Stylesheet:
+    'stylesheet' '=' style=STRING
 ;
 
 class_view:

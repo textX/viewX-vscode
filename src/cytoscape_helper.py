@@ -68,7 +68,7 @@ def serialize_json(obj):
 
 def deserialize_json(json):
     classname = json.pop('__classname__', None)
-    if classname == type(self).__name__:
+    if classname == 'Element': # type(self).__name__:
         obj = Element.__new__(Element)   # Make instance without calling __init__
         for key, value in json.items():
             setattr(obj, key, value)
@@ -87,15 +87,4 @@ class ViewStyle(object):
     def to_json(self):
         return json.dumps(self, default=serialize_json)
 
-n1 = Node()
-n1.classes = 'foo bar'
-n2 = Node()
-e1 = Edge(n1, n2)
-
 # j1 = json.dumps(n1, default=serialize_json)
-
-s1 = ViewStyle(n1)
-print(s1.selector)
-
-j2 = json.dumps(s1, default=serialize_json)
-print(j2)

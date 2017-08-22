@@ -28,7 +28,9 @@
                     {% endif %}
                 {% endfor %}
             ],
-            style: [
+            style: {% if view_model.stylesheet.style -%}
+            {{view_model.stylesheet.style}}
+            {% else %}[
                 {% for style in styles %}
                     {# workaround because join() filter splits each letter after applying to_json() function #}
                     {% if not loop.first %}
@@ -37,7 +39,7 @@
                     {{style.to_json()}}
                     {% endif %}
                 {% endfor %}
-            ],
+            ]{%- endif %},
             layout: {
                 name: 'circle',
                 fit: true,

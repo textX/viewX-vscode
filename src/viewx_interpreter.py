@@ -61,24 +61,32 @@ class ViewXInterpreter(object):
         print(model.__getattribute__('_tx_attrs').items())
         print(dir(view_model.views[0]))
 
+        print('stylesheet')
+        print(view_model.stylesheet)
+        print(dir(view_model.stylesheet))
+        print(view_model.stylesheet.style)
+
         for view in view_model.views:
             print()
             print("1. {}".format(view.name))
             # loop over model tx properties recursively and match them with defined views
             self.match_view_within_type(model, view)
-            # generate view styles
-            print('generate view styles')
-            visitor = cre.ViewStylePropertyVisitor(view)
-            property_link = None
-            for prop in view.properties:
-                visitor.visit(prop)
-                if prop.__class__.__name__ == 'PropertyLink':
-                    property_link = prop
-            self.styles.append(visitor.view_style)
-            # check if view has link to it's properties
-            if property_link is not None:
-                link_visitor = cre.LinkStylePropertyVisitor(view, property_link)
-                self.styles.append(link_visitor.view_style)
+
+            if view_model.stylesheet.style is None:
+                # generate view styles
+                print('generate view styles')
+                visitor = cre.ViewStylePropertyVisitor(view)
+                property_link = None
+                for prop in view.properties:
+                    visitor.visit(prop)
+                    # check if view has link to it's properties
+                    if prop.__class__.__name__ == 'PropertyLink':
+                        property_link = prop
+                self.styles.append(visitor.view_style)
+                # if it has, create style for property links
+                if property_link is not None:
+                    link_visitor = cre.LinkStylePropertyVisitor(view, property_link)
+                    self.styles.append(link_visitor.view_style)
 
         # create property links if any
         if self.links.__len__() > 0:
