@@ -419,7 +419,7 @@ class ViewXInterpreter(object):
             # inner dictionary iteration
             for key_el_hash, value_element in self.elements.items():
                 # linked properties (hash codes)
-                linked = value_link_dict.get(key_el_hash, [])
+                linked = value_link_dict.get(key_el_hash, {})
                 for target_hash, link_props in linked.items():
                     start_element = self.elements.get(key_el_hash, None)
                     end_element = self.elements.get(target_hash, None)

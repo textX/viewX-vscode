@@ -19,7 +19,7 @@ view State as Rectangle
     }
     link
     {
-        to: State.transitions.event(Event)
+        to: State.transitions.event
         {
             arrow: red 2 triangle hollow
         }
