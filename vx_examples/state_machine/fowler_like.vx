@@ -1,0 +1,26 @@
+// this could be even moved to config file
+tximport StateMachine from "./../../tx_samples/state_machine/state_machine.tx"
+
+stylesheet = '
+    [
+        {"selector": "node.state", "style": {"shape": "roundrectangle", "background-color": "red", "border-width": 4, "border-style": "double", "border-color": "yellow", "label": "data(label)", "text-background-color": "lightgray", "text-background-opacity": 0.8, "text-background-shape": "rectangle", "font-size": 13, "font-style": "italic", "color": "black"}}
+        ,{"selector": "edge.state-transitions-to_state", "style": {"curve-style": "bezier", "arrow-scale": 2, "target-arrow-shape": "triangle", "target-arrow-fill": "hollow", "target-arrow-color": "blue", "label": "data(label)"}}
+        ,{"selector": "node.command", "style": {"shape": "star", "background-color": "yellow", "label": "data(label)", "font-size": 12, "font-style": "normal", "color": "white", "text-background-color": "black", "text-background-opacity": 0.5, "text-background-shape": "rectangle", "border-width": 2, "border-style": "solid", "border-color": "blue"}}
+    ]
+'
+
+view State as Roundrectangle
+{
+    label: State.name
+    link
+    {
+        // from: implicit if not defined
+        to: State.transitions.to_state
+        label: State.transitions.event.name
+    }
+}
+
+view Command as Star inside State
+{
+    label: Command.name
+}

@@ -166,10 +166,12 @@ class ViewXInterpreter(object):
             for prop in view.properties:
                 if prop.__class__.__name__ == 'EdgeStartProperty':
                     start_element = self.get_class_property(prop.class_properties, item)
-                    start_element = self.elements[start_element.__hash__()]
+                    if self.elements.__contains__(start_element.__hash__()):
+                        start_element = self.elements[start_element.__hash__()]
                 elif prop.__class__.__name__ == 'EdgeEndProperty':
                     end_element = self.get_class_property(prop.class_properties, item)
-                    end_element = self.elements[end_element.__hash__()]
+                    if self.elements.__contains__(end_element.__hash__()):
+                        end_element = self.elements[end_element.__hash__()]
                 # when both start and end nodes are defined
                 if start_element is not None and end_element is not None:
                     graph_element = cy.Edge(start_element, end_element, item.__hash__())
@@ -202,16 +204,9 @@ class ViewXInterpreter(object):
                     label = prop
                     break
             link_labels = []
-            if label:
+            if label: # if property link label is defined
                 if label.label.__class__.__name__ == 'ClassLabel':
-                    unresolved_properties = []
-                    # remove resolved properties, should leave only single item properties
-                    for prop in label.label.class_properties:
-                        if not property_link.link_to.class_properties.__contains__(prop):
-                            unresolved_properties.append(prop)
-                    # resolve link labels
-                    link_labels = [self.get_class_property(unresolved_properties, link) for link in property_links]
-                    # add labels to link properties
+                    link_labels = self.get_all_resolved_properties(label.label.class_properties, item)
                     for value_props, link_label in zip(transformed_links.values(), link_labels):
                         value_props.append(('label', link_label))
                 else:
