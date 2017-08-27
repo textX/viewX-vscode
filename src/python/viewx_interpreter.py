@@ -448,7 +448,7 @@ def build_path_from_import(view_model, _import):
     return path
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 3:
         print("Usage: python {} <view_model> <model>".format(sys.argv[0]))
     else:
         viewx_grammar_folder = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'grammar')
