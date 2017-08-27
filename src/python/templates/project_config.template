@@ -1,0 +1,17 @@
+{
+    "project": {
+        "type": "viewX",
+        "name": "{{ projectName }}",
+        "version": "0.1",
+        "root": "."
+    },
+    "viewx_models": {
+        "root": ".",
+        "extension_mapping": [
+            {
+                "name": "course_overview.vx",
+                "extension": "*.univ"
+            }
+        ]
+    }
+}

@@ -4,7 +4,6 @@ Module which serves as a viewX model interpreter.
 
 import sys
 import os
-import copy
 from textx.metamodel import metamodel_from_file
 import preview_generator
 import cytoscape_helper as cy
@@ -452,7 +451,7 @@ if __name__ == '__main__':
     if len(sys.argv) < 2:
         print("Usage: python {} <view_model> <model>".format(sys.argv[0]))
     else:
-        viewx_grammar_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'grammar')
+        viewx_grammar_folder = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'grammar')
         view_meta_model = metamodel_from_file(os.path.join(viewx_grammar_folder, 'viewX.tx'))
         view_model = view_meta_model.model_from_file(sys.argv[1])
 

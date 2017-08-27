@@ -31,8 +31,7 @@ class_view:
 ;
 
 Shape:
-    'Graph' | 'State' | 'Line' |
-    'Ellipse' | 'Triangle' | 'Rectangle' | 'Roundrectangle' | 'Rhomboid' | 'Diamond' | 'Star' | 'Vee'
+    'Graph' | 'State' | 'Line' | /\w+/
 ;
 
 ViewProperty:

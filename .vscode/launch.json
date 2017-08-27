@@ -3,6 +3,16 @@
     "version": "0.1.0",
     "configurations": [
         {
+            "name": "Attach (Remote Debug)",
+            "type": "python",
+            "request": "attach",
+            "localRoot": "${workspaceRoot}",
+            "remoteRoot": "${workspaceRoot}",
+            "port": 3000,
+            "secret": "my_secret",
+            "host": "localhost"
+        },
+        {
             "name": "Launch Extension",
             "type": "extensionHost",
             "request": "launch",

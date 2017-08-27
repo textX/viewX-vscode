@@ -3,15 +3,15 @@ import datetime
 import jinja2
 
 TEMPLATE_NAME = 'preview.template'
-ROOT_PATH = os.path.abspath(os.path.dirname(__file__))
-OUTPUT_PATH = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'graph_preview'))
+TEMPLATE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates'))
+OUTPUT_PATH = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname((__file__)))), 'graph_preview'))
 
 def generate(view_model, model, viewx_interpreter):
 
     # Initialize template engine.
     jinja_env = jinja2.Environment(
         trim_blocks=True, lstrip_blocks=True,
-        loader=jinja2.FileSystemLoader(ROOT_PATH))
+        loader=jinja2.FileSystemLoader(TEMPLATE_PATH))
 
     # Load preview template
     template = jinja_env.get_template(TEMPLATE_NAME)

@@ -1,8 +1,8 @@
 from cytoscape_helper import ViewStyle
 
 edge_shapes = ('Line')
-node_shapes = ('ellipse', 'triangle', 'rectangle', 'roundrectangle', 'cutrectangle', 'rhomboid',
-                'diamond', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star', 'vee')
+node_shapes = ('ellipse', 'triangle', 'rectangle', 'roundrectangle', 'cutrectangle', 'bottomroundrectangle', 'barrel', 'rhomboid',
+                'diamond', 'pentagon', 'hexagon', 'concavehexagon', 'heptagon', 'octagon', 'star', 'vee')
 
 node_background = ('background-color', 'background-blacken', 'background-opacity')
 node_border = ('border-width', 'border-style', 'border-color', 'border-opacity')
