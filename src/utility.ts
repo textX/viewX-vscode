@@ -9,7 +9,9 @@ export class Utility {
         const port = ps_options.get("port") as number;
         const proxy = ps_options.get("proxy") as string;
         // let relativePath = vscode.workspace.asRelativePath(previewFullPath);
-        let relativePath = this.getPreviewHtmlRelativePath();
+        // let relativePath = this.getPreviewHtmlRelativePath();
+        // let relativePath = this.getFileNameFromFileUri(vscode.Uri.parse(this.getPreviewHtmlRelativePath()));
+        let relativePath = "preview.html";
 
         // if (vscode.workspace.rootPath === undefined) {
         //     let paths = relativePath.split("/");
@@ -28,14 +30,13 @@ export class Utility {
     public static getFilePathOfPreviewHtml(): string {
         const vx_options = vscode.workspace.getConfiguration("viewX");
         const extensionPath = vscode.extensions.getExtension(vx_options.get("fullExtensionName") as string).extensionPath;
-        const previewFullPath = extensionPath + (vx_options.get("previewFilePath") as string);
+        const previewFullPath = vscode.Uri.parse(extensionPath + (vx_options.get("previewFilePath") as string)).fsPath;
         return previewFullPath;
     }
 
     public static getPreviewHtmlRelativePath(): string {
         const vx_options = vscode.workspace.getConfiguration("viewX");
-        const fullExtensionName = vx_options.get("fullExtensionName") as string;
-        const previewFullPath = fullExtensionName.split('.')[1] + (vx_options.get("previewFilePath") as string);
+        const previewFullPath = vx_options.get("previewFilePath") as string;
         return previewFullPath;
     }
 
@@ -62,5 +63,26 @@ export class Utility {
         // remove file name.
         paths.pop();
         return paths.join("\\");
+    }
+
+    public static isFileMatchingFilter(fileName: string, filter: string): boolean {
+        if (filter === "*.*" || fileName === filter) {
+            return true;
+        }
+        if (filter.startsWith("*.")) {
+            if (fileName.split(".").slice(1).join(".") === filter.split(".").slice(1).join(".")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static getFileNameFromFileUri(uri: vscode.Uri): string {
+        if (uri.path.indexOf("/") > -1) {
+            return uri.path.substring(uri.path.lastIndexOf("/") + 1);
+        }
+        else {
+            return uri.path;
+        }
     }
 }
