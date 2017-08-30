@@ -5,12 +5,12 @@
         "version": "0.1",
         "root": "."
     },
-    "viewx_models": {
+    "viewXModels": {
         "root": ".",
-        "extension_mapping": [
+        "filterMappings": [
             {
-                "name": "course_overview.vx",
-                "extension": "*.univ"
+                "modelName": "course_overview.vx",
+                "filter": "*.univ"
             }
         ]
     }

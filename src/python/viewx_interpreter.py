@@ -9,22 +9,6 @@ import preview_generator
 import cytoscape_helper as cy
 import cytoscape_rule_engine as cre
 
-for v in sys.argv[0:]:
-    print(v)
-
-dir_path = os.path.dirname(os.path.realpath(__file__))
-dir_path = os.path.dirname(dir_path)
-
-def test():
-    print(dir_path)
-    os.system("start /wait cmd /c PAUSE")
-
-def view_model():
-    viewx_mm = metamodel_from_file(os.path.join(dir_path, 'grammar', 'viewX.tx'))
-    viewx_model = viewx_mm.model_from_file(os.path.join(dir_path, 'examples', 'state_machine.vx'))
-    print(dir(viewx_model))
-    print('kraj')
-
 class ViewXInterpreter(object):
     """
     ViewX model interpreter.
@@ -165,12 +149,10 @@ class ViewXInterpreter(object):
             for prop in view.properties:
                 if prop.__class__.__name__ == 'EdgeStartProperty':
                     start_element = self.get_class_property(prop.class_properties, item)
-                    if self.elements.__contains__(start_element.__hash__()):
-                        start_element = self.elements[start_element.__hash__()]
+                    start_element = self.elements.get(start_element.__hash__(), None)
                 elif prop.__class__.__name__ == 'EdgeEndProperty':
                     end_element = self.get_class_property(prop.class_properties, item)
-                    if self.elements.__contains__(end_element.__hash__()):
-                        end_element = self.elements[end_element.__hash__()]
+                    end_element = self.elements.get(end_element.__hash__(), None)
                 # when both start and end nodes are defined
                 if start_element is not None and end_element is not None:
                     graph_element = cy.Edge(start_element, end_element, item.__hash__())

@@ -25,3 +25,7 @@ Course:
         'description' ':' description = STRING
     '}'
 ;
+
+Comment:
+  /\/\/.*$/
+;

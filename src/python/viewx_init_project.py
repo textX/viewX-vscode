@@ -10,7 +10,8 @@ TEMPLATE_PATH = os.path.abspath(os.path.join(ROOT_PATH, 'templates'))
 TEMPLATE_DATA = [
     ('project_config.template', 'vxconfig.json'),
     ('tx_metamodel.template', 'university.tx'),
-    ('tx_model.template', 'university_sample.univ'),
+    ('tx_model_1.template', 'university_sample_1.univ'),
+    ('tx_model_2.template', 'university_sample_2.univ'),
     ('vx_model.template', 'course_overview.vx')
 ]
 
