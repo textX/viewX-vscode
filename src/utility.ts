@@ -2,16 +2,18 @@ import * as vscode from "vscode";
 
 export class Utility {
 
-    public static getUriOfPreviewHtml() {
-        const previewFullPath = this.getFilePathOfPreviewHtml();
+    private static extensionConfig: vscode.WorkspaceConfiguration;
+    private static serverConfig: vscode.WorkspaceConfiguration;
 
-        const ps_options = vscode.workspace.getConfiguration("previewServer");
-        const port = ps_options.get("port") as number;
-        const proxy = ps_options.get("proxy") as string;
-        // let relativePath = vscode.workspace.asRelativePath(previewFullPath);
-        // let relativePath = this.getPreviewHtmlRelativePath();
-        // let relativePath = this.getFileNameFromFileUri(vscode.Uri.parse(this.getPreviewHtmlRelativePath()));
-        let relativePath = "preview.html";
+    public static initialize() {
+        Utility.extensionConfig = vscode.workspace.getConfiguration("viewX");
+        Utility.serverConfig = vscode.workspace.getConfiguration("viewX.previewServer");
+    }
+
+    public static getUriOfPreviewHtml() {
+        const port = Utility.serverConfig.get("port") as number;
+        const proxy = Utility.serverConfig.get("proxy") as string;
+        let relativePath = Utility.getFileNameFromFileUriPath(Utility.extensionConfig.get("previewFilePath"));
 
         // if (vscode.workspace.rootPath === undefined) {
         //     let paths = relativePath.split("/");
@@ -27,28 +29,25 @@ export class Utility {
         return vscode.Uri.parse(`http://${host}:3000/${uri.path}`);
     }
 
-    public static getFilePathOfPreviewHtml(): string {
-        const vx_options = vscode.workspace.getConfiguration("viewX");
-        const extensionPath = vscode.extensions.getExtension(vx_options.get("fullExtensionName") as string).extensionPath;
-        const previewFullPath = vscode.Uri.parse(extensionPath + (vx_options.get("previewFilePath") as string)).fsPath;
-        return previewFullPath;
+    public static getPreviewHtmlFilePath(): string {
+        const extensionPath = vscode.extensions.getExtension(Utility.extensionConfig.get("fullExtensionName") as string).extensionPath;
+        const previewFullPath = vscode.Uri.file(extensionPath + (Utility.extensionConfig.get("previewFilePath") as string));
+        return previewFullPath.fsPath;
     }
 
     public static getPreviewHtmlRelativePath(): string {
-        const vx_options = vscode.workspace.getConfiguration("viewX");
-        const previewFullPath = vx_options.get("previewFilePath") as string;
-        return previewFullPath;
+        const previewRelativePath = Utility.extensionConfig.get("previewFilePath") as string;
+        return previewRelativePath;
     }
 
     public static setRandomPort() {
-        const ps_options = vscode.workspace.getConfiguration("previewServer");
-        let port = ps_options.get("port") as number;
+        let port = Utility.serverConfig.get("port") as number;
         if (!port) {
             // dynamic ports (49152–65535)
             port = Math.floor(Math.random() * 16383 + 49152);
-            ps_options.update("port", port, false)
+            Utility.serverConfig.update("port", port, false)
             .then(() => {
-                vscode.window.showInformationMessage(`change previewServer.port setting to ${port}`);
+                vscode.window.showInformationMessage(`change viewx.previewServer.port setting to ${port}`);
             });
         }
     }
@@ -65,11 +64,13 @@ export class Utility {
         return paths.join("\\");
     }
 
+    // could be improved with partial name matching, e.g. test*.txt or *test.txt
     public static isFileMatchingFilter(fileName: string, filter: string): boolean {
         if (filter === "*.*" || fileName === filter) {
             return true;
         }
         if (filter.startsWith("*.")) {
+            // joining back to match possible multiple extensions
             if (fileName.split(".").slice(1).join(".") === filter.split(".").slice(1).join(".")) {
                 return true;
             }
@@ -77,12 +78,14 @@ export class Utility {
         return false;
     }
 
-    public static getFileNameFromFileUri(uri: vscode.Uri): string {
-        if (uri.path.indexOf("/") > -1) {
-            return uri.path.substring(uri.path.lastIndexOf("/") + 1);
+    public static getFileNameFromFileUriPath(path: string): string {
+        if (path.indexOf("/") > -1) {
+            return path.substring(path.lastIndexOf("/") + 1);
         }
         else {
-            return uri.path;
+            return path;
         }
     }
 }
+
+Utility.initialize();

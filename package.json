@@ -51,12 +51,12 @@
           "default": "viewXVEnv",
           "description": "Name of the environment variable which holds path to the viewX python virtual environment."
         },
-        "previewServer.isWatchConfiguration": {
+        "viewX.previewServer.isWatchConfiguration": {
           "type": "boolean",
           "default": true,
           "description": "Controls whether resume the Web Server or not, when change settings."
         },
-        "previewServer.port": {
+        "viewX.previewServer.port": {
           "type": [
             "number",
             "null"
@@ -64,12 +64,12 @@
           "default": 8080,
           "description": "Port number of the Web Server."
         },
-        "previewServer.proxy": {
+        "viewX.previewServer.proxy": {
           "type": "string",
           "default": "",
           "description": "Wrap your vhost with a proxy URL to view your site."
         },
-        "previewServer.sync": {
+        "viewX.previewServer.sync": {
           "type": "boolean",
           "default": true,
           "description": "Whether synchronized or not."

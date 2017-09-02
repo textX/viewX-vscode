@@ -23,7 +23,7 @@ export function activate(context: vscode.ExtensionContext) {
     let viewXExtension = new ViewXExtension();
 
     // start web server
-    startServer();
+    viewXExtension.startServer();
 
     // provider settings.
     const provider = new BrowserContentProvider();
@@ -39,27 +39,63 @@ export function activate(context: vscode.ExtensionContext) {
 
     // When configuration is changed, resume web server.
     vscode.workspace.onDidChangeConfiguration(() => {
-        const settings = vscode.workspace.getConfiguration("previewServer").get("isWatchConfiguration") as boolean;
+        const settings = viewXExtension.serverConfig.get("isWatchConfiguration") as boolean;
         if (settings) {
-            resumeServer();
+            viewXExtension.resumeServer();
             vscode.window.showInformationMessage("Resume the Web Server.");
         }
     });
 
     // When file is saved, reload browser.
     vscode.workspace.onDidSaveTextDocument((e) => {
+        console.log("doc save!");
         // re-generate preview html file when model file is saved (apply changes)
+        console.log("active model: " + viewXExtension.activeViewXModel)
         if (viewXExtension.activeViewXModel !== undefined) {
             let activeModelUri: vscode.Uri = vscode.window.activeTextEditor.document.uri;
-            viewXExtension.generatePreviewHtmlForModel(activeModelUri);
+            console.log(viewXExtension.previewColumn);
+            console.log(activeModelUri.path);
+            console.log(viewXExtension.lastPreviewedFileUri.path);
+            if (viewXExtension.previewColumn > 0 && activeModelUri.path === viewXExtension.lastPreviewedFileUri.path) {
+                viewXExtension.generatePreviewHtmlForModelAsync(activeModelUri, () => {
+                    console.log("callback reload!");
+                    Server.reload("preview.html");
+                });
+            }
         }
         // and then reload the web server to apply changes in preview
-        Server.reload(e.fileName);
+        // Server.reload("\preview.html");
+        // setTimeout(() => {
+        //     console.log("posle 3 sec, reload!")
+        //     Server.reload("preview.html");
+        // }, 3000);
     });
 
-    // unset active viewXModel
+    // unset active viewXModel unless if preview is shown
     vscode.window.onDidChangeActiveTextEditor(editor => {
-        viewXExtension.activeViewXModel = undefined;
+        console.log("changed editor");
+        console.log(editor);
+        viewXExtension.lastNumberOfOpenedDocuments = vscode.workspace.textDocuments.length;
+        console.log("currently opened: " + viewXExtension.lastNumberOfOpenedDocuments);
+        // if (editor !== undefined && editor.document.fileName === "preview.html") {
+        //     if (vscode.window.visibleTextEditors.length < viewXExtension.lastNumberOfColumns) {
+        //         viewXExtension.previewColumn = 0;
+        //         console.log("preview closed!");
+        //     }
+        // }
+        // if (editor !== undefined && editor.document.fileName !== "preview.html") {
+        //     viewXExtension.activeViewXModel = undefined;
+        //     console.log("unset active");
+        // }
+    });
+
+    vscode.workspace.onDidCloseTextDocument(e => {
+        // this is currently a VS Code bug
+        // https://github.com/Microsoft/vscode/issues/33728
+        if (e !== undefined && e.isClosed && e.uri.path === "/preview.html") {
+            viewXExtension.previewColumn = 0;
+        }
+        viewXExtension.lastNumberOfOpenedDocuments = vscode.workspace.textDocuments.length;
     });
 
     disposables.push(vscode.commands.registerCommand("viewx.initProject", () => {
@@ -78,7 +114,7 @@ export function activate(context: vscode.ExtensionContext) {
                     let projectName = result;
                     let options = {
                         mode: "text",
-                        pythonPath: `${viewXExtension.viewXVEnv}/Scripts/python`,
+                        pythonPath: `${viewXExtension.viewXVEnvPath}/Scripts/python`,
                         // pythonPath: "C:/Users/dkupco/VEnvs/viewx/Scripts/python", // DEV
                         args: [projectPath, projectName]
                     };
@@ -86,11 +122,11 @@ export function activate(context: vscode.ExtensionContext) {
                     let pyInterpreter = `${viewXExtension.extensionPath}/src/python/viewx_init_project.py`;
                     // let pyInterpreter = "C:/Users/dkupco/Documents/GitHub/viewX-vscode/src/python/viewx_init_project.py"; // DEV
 
-                    pythonShell.run(pyInterpreter, options, function (err, result) {
+                    pythonShell.run(pyInterpreter, options, function (err, results) {
                         // if (err) throw err;
-                        // result is an array consisting of messages collected during execution
-                        let projectFolder = vscode.Uri.parse(`${projectPath}/${projectName}`);
-                        if ((result[0] as string).trim() === "success") {
+                        // results is an array consisting of messages collected during execution
+                        let projectFolder = vscode.Uri.file(`${projectPath}/${projectName}`);
+                        if ((results[0] as string).trim() === "success") { // "success" is returned by the .py script
                             vscode.commands.executeCommand("vscode.openFolder", projectFolder, true);
                         }
                     });
@@ -102,35 +138,27 @@ export function activate(context: vscode.ExtensionContext) {
     disposables.push(vscode.commands.registerCommand("viewx.previewModel", () => {
 
         let activeModelUri: vscode.Uri = vscode.window.activeTextEditor.document.uri;
-        let fileName: string = Utility.getFileNameFromFileUri(activeModelUri);
+        let fileName: string = Utility.getFileNameFromFileUriPath(activeModelUri.path);
         let viewXModel: string = viewXExtension.findMatchingViewXModel(fileName);
 
         if (viewXModel === undefined) {
             vscode.window.showErrorMessage("There is no found viewX model that matches current file!");
             return;
-            // open vxconfig.json and add mathing for current file name in the future
+            // open vxconfig.json and add matching for current file name in the future
             // vscode.workspace.openTextDocument(testPreview).then(document => {
             //     console.log("opened: " + testPreview.fsPath);
             //     vscode.window.showTextDocument(document);
             // });
         }
 
-        viewXExtension.generatePreviewHtmlForModel(activeModelUri);
 
-        // set ViewColumn (VS Code supports up to 3 columns max)
-        let viewColumn: vscode.ViewColumn;
-        if (vscode.window.activeTextEditor.viewColumn < 3) {
-            viewColumn = vscode.window.activeTextEditor.viewColumn + 1;
-        } else {
-            viewColumn = 1;
-        }
-
-        // finally get URI of the preview file (hosted on web server) and show it
-        const previewUri = Utility.getUriOfPreviewHtml();
-        console.log("previewUri: " + previewUri);
-        return vscode.commands.executeCommand("vscode.previewHtml", previewUri, viewColumn, "Preview with WebServer").then(() => {
-        }, (reason) => {
-            vscode.window.showErrorMessage(reason);
+        viewXExtension.generatePreviewHtmlForModelAsync(activeModelUri, () => {
+            if (viewXExtension.previewColumn > 0) {
+                Server.reload("preview.html");
+            }
+            else {
+                viewXExtension.openModelPreview();
+            }
         });
     }));
 
@@ -145,7 +173,7 @@ export function activate(context: vscode.ExtensionContext) {
     }));
 
     disposables.push(vscode.commands.registerCommand("viewx.resumeServer", () => {
-        resumeServer();
+        viewXExtension.resumeServer();
         vscode.window.showInformationMessage("Resume the Web Server.");
     }));
 
@@ -155,41 +183,33 @@ export function activate(context: vscode.ExtensionContext) {
     });
 }
 
-function startServer() {
-    Utility.setRandomPort();
-    const options = vscode.workspace.getConfiguration("previewServer");
-    const port = options.get("port") as number;
-    const proxy = options.get("proxy") as string;
-    const isSync = options.get("sync") as boolean;
-    // const rootPath = vscode.workspace.rootPath || Utility.getOpenFilePath(vscode.window.activeTextEditor.document.fileName);
-    // instead of workspace path, we now pass root path of the preview.html file (within extension root folder)
-    const rootPath = Utility.getOpenFilePath(Utility.getFilePathOfPreviewHtml());
-    Server.start(rootPath, port, isSync, proxy);
-}
-
-function resumeServer() {
-    Server.stop();
-    startServer();
-}
-
 // this method is called when your extension is deactivated
 export function deactivate() {
     Server.stop();
 }
 
 class ViewXExtension {
-    public activeViewXModel: string;
+    // fixed values
     public extensionPath: string;
-    public viewXVEnv: string;
-    public viewXConfig: ViewXConfig;
+    public viewXVEnvPath: string;
+    public extensionConfig: vscode.WorkspaceConfiguration;
+    public serverConfig: vscode.WorkspaceConfiguration;
+
+    // changeable values
+    public viewXProjectConfig: ViewXConfig;
+    public activeViewXModel: string;
+    public lastPreviewedFileUri: vscode.Uri;
+    public previewColumn: number = 0;
+    public lastNumberOfOpenedDocuments: number = 0;
 
     constructor() {
-        const options = vscode.workspace.getConfiguration("viewX");
-        this.extensionPath = vscode.extensions.getExtension(options.get("fullExtensionName") as string).extensionPath;
-        this.viewXVEnv = process.env[options.get("envVariableName") as string];
+        this.extensionConfig = vscode.workspace.getConfiguration("viewX");
+        this.serverConfig = vscode.workspace.getConfiguration("viewX.previewServer");
+        this.extensionPath = vscode.extensions.getExtension(this.extensionConfig.get("fullExtensionName") as string).extensionPath;
+        this.viewXVEnvPath = process.env[this.extensionConfig.get("envVariableName") as string];
 
         console.log("extension path: " + this.extensionPath);
-        console.log("viewXVEnv: " + this.viewXVEnv);
+        console.log("viewXVEnv: " + this.viewXVEnvPath);
 
         // if workspace is loaded, read viewX project configuration file
         let workspacePath = vscode.workspace.rootPath;
@@ -199,7 +219,7 @@ class ViewXExtension {
             const loadJsonFile = require("load-json-file");
             try {
                 // need to read config file synchronously, because we can end up using it while it has not been read yet
-                this.viewXConfig = loadJsonFile.sync(`${workspacePath}/vxconfig.json`);
+                this.viewXProjectConfig = loadJsonFile.sync(`${workspacePath}/vxconfig.json`);
                 console.log("ucitao config json");
             // need to catch the error in order to continue activating the extension
             } catch (error) {
@@ -211,7 +231,7 @@ class ViewXExtension {
 
     public findMatchingViewXModel(fileName: string): string {
         let viewXModel = undefined;
-        this.viewXConfig.viewXModels.filterMappings.forEach(map => {
+        this.viewXProjectConfig.viewXModels.filterMappings.forEach(map => {
             if(Utility.isFileMatchingFilter(fileName, map.filter)) {
                 viewXModel = map.modelName;
                 return;
@@ -221,28 +241,71 @@ class ViewXExtension {
         return viewXModel;
     }
 
-    public generatePreviewHtmlForModel(modelUri: vscode.Uri) {
-        let envPythonUri = vscode.Uri.parse(`${this.viewXVEnv}/Scripts/python`);
-        let workspaceUri = vscode.Uri.parse(vscode.workspace.rootPath);
+    public generatePreviewHtmlForModelAsync(modelUri: vscode.Uri, callback: Function) {
+        let envPythonUri = vscode.Uri.file(`${this.viewXVEnvPath}/Scripts/python`);
+        let workspaceUri = vscode.workspace.rootPath;
+        console.log("envPythonUri: " + envPythonUri.path);
+        console.log("workspaceUri: " + workspaceUri);
         let options = {
             mode: "text",
-            pythonPath: `${envPythonUri.scheme}:${envPythonUri.path}`,
+            pythonPath: envPythonUri.fsPath,
             // pythonOptions: ["-u"],
             // scriptPath: "path/to/my/scripts",
-            args: [`${workspaceUri.scheme}:${workspaceUri.path}/${this.activeViewXModel}`, `${modelUri.scheme}:${modelUri.path}`]
+            args: [`${workspaceUri}/${this.activeViewXModel}`, modelUri.fsPath]
         };
 
         //let pyInterpreter = vscode.Uri.parse("file:///D:/Programiranje/MasterRad/viewx-vscode/src/viewx_interpreter.py");
-        let pyInterpreterUri = vscode.Uri.parse(`${this.extensionPath}/src/viewx_interpreter.py`);
 
-        console.log("viewModel: " + `${workspaceUri.scheme}:${workspaceUri.path}/${this.activeViewXModel}`);
-        console.log("model: " + `${modelUri.scheme}:${modelUri.path}`);
-        console.log("pyInterpreter: " + `${pyInterpreterUri.scheme}:${pyInterpreterUri.path}`);
+        let pyInterpreterUri = vscode.Uri.file(`${this.extensionPath}/src/python/viewx_interpreter.py`);
 
-        pythonShell.run(`${pyInterpreterUri.scheme}:${pyInterpreterUri.path}`, options, function (err, results) {
+        console.log("viewModel: " + `${workspaceUri}/${this.activeViewXModel}`);
+        console.log("model: " + modelUri.fsPath);
+        console.log("before uri: " + `${this.extensionPath}/src/python/viewx_interpreter.py`);
+        console.log("pyInterpreter: " + pyInterpreterUri.fsPath);
+
+        pythonShell.run(pyInterpreterUri.fsPath, options, function (err, results) {
             // if (err) throw err;
             // results is an array consisting of messages collected during execution
             console.log("results: " + results);
+            callback();
+        });
+        this.lastPreviewedFileUri = modelUri;
+    }
+
+    public openModelPreview() {
+        // set ViewColumn (VS Code supports up to 3 columns max)
+        let viewColumn: vscode.ViewColumn;
+        if (vscode.window.activeTextEditor.viewColumn < 3) {
+            viewColumn = vscode.window.activeTextEditor.viewColumn + 1;
+        } else {
+            viewColumn = 1;
+        }
+        let fileToPreview: vscode.Uri = vscode.window.activeTextEditor.document.uri;
+        // finally get URI of the preview file (hosted on web server) and show it
+        const previewUri = Utility.getUriOfPreviewHtml();
+        console.log("previewUri: " + previewUri);
+        vscode.commands.executeCommand("vscode.previewHtml", previewUri, viewColumn, "Preview with WebServer").then(() => {
+            this.lastNumberOfOpenedDocuments = vscode.window.visibleTextEditors.length;
+            this.previewColumn = viewColumn;
+        }, (reason) => {
+                vscode.window.showErrorMessage(reason);
         });
     }
+
+    public startServer() {
+        Utility.setRandomPort();
+        const port = this.serverConfig.get("port") as number;
+        const proxy = this.serverConfig.get("proxy") as string;
+        const isSync = this.serverConfig.get("sync") as boolean;
+        // const rootPath = vscode.workspace.rootPath || Utility.getOpenFilePath(vscode.window.activeTextEditor.document.fileName);
+        // instead of workspace path, we now pass root path of the preview.html file (within extension root folder)
+        const rootPath = Utility.getOpenFilePath(Utility.getPreviewHtmlFilePath());
+        Server.start(rootPath, port, isSync, proxy);
+    }
+
+    public resumeServer() {
+        Server.stop();
+        this.startServer();
+    }
+
 }
