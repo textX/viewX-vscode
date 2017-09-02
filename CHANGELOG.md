@@ -1,7 +1,6 @@
-# Change Log
-All notable changes to the "viewx-vscode" extension will be documented in this file.
+# viewX-vscode change Log
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
-
-## [Unreleased]
-- Initial release
+- Release 0.1
+    - Initial release.
+    - Fully functional VS Code extension.
+    - Supports viewX/textX project creation, model visualization using viewX DSL, model<->basic graph interaction.
