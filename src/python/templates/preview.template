@@ -11,6 +11,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="css/style.css" rel="stylesheet">
     <script src='js/cytoscape.min.js'></script>
+    <script src='js/socket.io.slim.js'></script>
 </head>
 
 <body>
@@ -47,6 +48,43 @@
                 avoidOverlap: true
             }
         });
+
+        // timestamp of the last click event
+        var lastClickTimeStamp = 0.00;
+		
+        const socket = io('http://localhost:3002');
+        socket.emit("preview-room");
+        cy.elements().on('click', (event) => {
+            console.log('graph click');
+            console.log(event);
+            console.log(lastClickTimeStamp);
+            // workaround since cytoscape.js does not support double click event
+            // if the second click ocurred at most 1 second after the first, consider it as a double click event
+			if (event.timeStamp - lastClickTimeStamp <= 1000.00) {
+				var el_data = event.target._private.data;
+				socket.emit("preview-send-command", `select|offset=${el_data.offset}|offset_end=${el_data.offset_end}`);
+				console.log('graph double click');
+			}
+			lastClickTimeStamp = event.timeStamp;
+        });
+        socket.on("preview-receive-command", function(command) {
+            console.log('preview received command: ' + command);
+            interpretCommand(command);
+        });
+
+        function interpretCommand(command) {
+            if (command.startsWith("fit")) {
+                var filter = "";
+                var args = command.split("|").slice(1).forEach(arg => {
+                    filter += "[" + arg + "]";
+                });
+                console.log(filter);
+                var padding = Math.min(window.screen.height, window.screen.width) / 4;
+                cy.fit(cy.elements(filter), padding);
+                // workaround for centering bug (moving by y-axis offset)
+                cy.panBy({x: 0, y: -padding * 4 / 5});
+            }
+        }
     </script>
 </body>
 

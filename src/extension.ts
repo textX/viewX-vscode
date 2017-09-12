@@ -10,6 +10,10 @@ import { Server } from "./server";
 import { Utility } from "./utility";
 // import viewX configuration module
 import { ViewXConfig } from "./viewXConfig"
+// import socket.io client (must be imported like this in typescript)
+import * as io from "socket.io-client"
+// import socket server (communication proxy)
+import * as socketserver from "./socket-server"
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -24,6 +28,18 @@ export function activate(context: vscode.ExtensionContext) {
 
     // start web server
     viewXExtension.startServer();
+
+    // start socket server
+    socketserver.startSocketServer();
+
+    // connect to socket server and join extension room
+    const socket = io("http://localhost:3002");
+    socket.emit("ext-room");
+
+    socket.on("ext-receive-command", function(command) {
+        console.log("extension: command received - " + command);
+        viewXExtension.interpretCommand(command);
+    });
 
     // provider settings.
     const provider = new BrowserContentProvider();
@@ -177,6 +193,14 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage("Resume the Web Server.");
     }));
 
+    disposables.push(vscode.commands.registerCommand("viewx.sendCommand", () => {
+        let cursorPosition = vscode.window.activeTextEditor.selection.start;
+        let lineBeginning = new vscode.Position(cursorPosition.line, 0);
+        let offset = vscode.window.activeTextEditor.document.offsetAt(lineBeginning);
+        socket.emit("ext-send-command", `fit|offset=${offset}`);
+        vscode.window.showInformationMessage("Command sent: " + `fit|offset=${offset}`);
+    }));
+
     // subscribe all commands
     disposables.forEach(disposable => {
         context.subscriptions.push(disposable);
@@ -306,6 +330,30 @@ class ViewXExtension {
     public resumeServer() {
         Server.stop();
         this.startServer();
+    }
+
+    public interpretCommand(command: string) {
+        if (command.startsWith("select")) {
+            console.log("select command");
+            let args = command.split("|");
+            let offset = Number(args[1].split("=")[1]);
+            let offset_end = Number(args[2].split("=")[1]);
+
+            vscode.window.visibleTextEditors.forEach(editor => {
+                // select only if previewed file is visible in some of the editors
+                if (editor.document.uri.path === this.lastPreviewedFileUri.path) {
+                    let startPosition = editor.document.positionAt(offset);
+                    let endPosition = editor.document.positionAt(offset_end);
+                    // reverse selection (cursor is at the beginning of the definition)
+                    vscode.window.visibleTextEditors[0].selection = new vscode.Selection(endPosition, startPosition);
+                    vscode.window.visibleTextEditors[0].revealRange(
+                        new vscode.Range(startPosition, endPosition), vscode.TextEditorRevealType.InCenter);
+                }
+            });
+        }
+        else {
+            console.log("unknown command: " + command);
+        }
     }
 
 }

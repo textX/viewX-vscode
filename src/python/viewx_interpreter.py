@@ -158,14 +158,14 @@ class ViewXInterpreter(object):
                     graph_element = cy.Edge(start_element, end_element, item.__hash__())
         else: # element is node
             graph_element = cy.Node(item.__hash__())
-        
+
         # check if property link is defined (need to store links and create them later)
         property_link = None
         for prop in view.properties:
             if prop.__class__.__name__ == 'PropertyLink':
                 property_link = prop
                 break
-        
+
         # if item has defined links to it's properties, store them for later creating
         if property_link is not None:
             # resolve links to properties
@@ -217,8 +217,18 @@ class ViewXInterpreter(object):
             #     return elements
             # else:
             parent = self.find_view_parent_tx_type(item, view, self.model)
-            graph_element.add_data('parent', parent.__hash__())            
+            graph_element.add_data('parent', parent.__hash__())
 
+        print()
+        print('-*-**-*-**-*-')
+        print('item - {}'.format(item))
+        print(dir(item))
+        print(item._tx_position)
+        # add type definition offset
+        graph_element.add_data('offset', item._tx_position)
+        graph_element.add_data('offset_end', item._tx_position_end)
+
+        # add class of view name (textx model type name)
         graph_element.add_class(view.name.lower())
         return [{item.__hash__(): graph_element}]
     
