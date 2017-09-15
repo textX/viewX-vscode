@@ -26,7 +26,7 @@ export class Utility {
 
         let uri = vscode.Uri.parse(`http://${proxy}`);
         let host = uri.authority.split(":")[0];
-        return vscode.Uri.parse(`http://${host}:3000/${uri.path}`);
+        return vscode.Uri.parse(`http://${host}:${port}/${uri.path}`);
     }
 
     public static getPreviewHtmlFilePath(): string {

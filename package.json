@@ -61,7 +61,7 @@
             "number",
             "null"
           ],
-          "default": 8080,
+          "default": 3000,
           "description": "Port number of the Web Server."
         },
         "viewX.previewServer.proxy": {

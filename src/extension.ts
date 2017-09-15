@@ -26,9 +26,6 @@ export function activate(context: vscode.ExtensionContext) {
     let disposables = [];
     let viewXExtension = new ViewXExtension();
 
-    // start web server
-    viewXExtension.startServer();
-
     // start socket server
     socketserver.startSocketServer();
 
@@ -89,10 +86,21 @@ export function activate(context: vscode.ExtensionContext) {
 
     // unset active viewXModel unless if preview is shown
     vscode.window.onDidChangeActiveTextEditor(editor => {
-        console.log("changed editor");
-        console.log(editor);
-        viewXExtension.lastNumberOfOpenedDocuments = vscode.workspace.textDocuments.length;
+        console.log("changed active editor");
+        console.log(editor.document.fileName);
+        console.log("last number of opened: " + viewXExtension.lastNumberOfOpenedDocuments);
         console.log("currently opened: " + viewXExtension.lastNumberOfOpenedDocuments);
+
+        // since preview close flag is set even when it just looses focus
+        // we check here if any new document was opened
+        // if not then it is our best bet that preview is actually closed so we reset preview column to 0
+        if (viewXExtension.previewPotentiallyClosed &&
+            vscode.workspace.textDocuments.length < viewXExtension.lastNumberOfOpenedDocuments) {
+                viewXExtension.previewColumn = 0;
+                console.log("setting preview column to 0");
+        }
+        viewXExtension.lastNumberOfOpenedDocuments = vscode.workspace.textDocuments.length;
+        viewXExtension.previewPotentiallyClosed = false;
         // if (editor !== undefined && editor.document.fileName === "preview.html") {
         //     if (vscode.window.visibleTextEditors.length < viewXExtension.lastNumberOfColumns) {
         //         viewXExtension.previewColumn = 0;
@@ -105,13 +113,41 @@ export function activate(context: vscode.ExtensionContext) {
         // }
     });
 
-    vscode.workspace.onDidCloseTextDocument(e => {
+    vscode.window.onDidChangeVisibleTextEditors(visibleEditors => {
+        console.log("onDidChangeVisibleTextEditors, count: " + visibleEditors.length);
+        visibleEditors.forEach(element => {
+            console.log("+ : " + element.document.fileName);
+        });
+    });
+
+    vscode.workspace.onDidCloseTextDocument(document => {
         // this is currently a VS Code bug
         // https://github.com/Microsoft/vscode/issues/33728
-        if (e !== undefined && e.isClosed && e.uri.path === "/preview.html") {
-            viewXExtension.previewColumn = 0;
+        // there is no way to find out if file has been closed
+        console.log("close document");
+        console.log(document.fileName)
+        console.log("preview column: " + viewXExtension.previewColumn)
+        if (document !== undefined && document.isClosed && document.uri.path === "/preview.html") {
+            // this is workaround, best bet that preview is closed
+            viewXExtension.previewPotentiallyClosed = true;
+            console.log("preview potentially closed");
+            // if preview is last document in editor, we must check here since activate will not trigger
+            if (vscode.workspace.textDocuments.length < viewXExtension.lastNumberOfOpenedDocuments) {
+                    viewXExtension.previewColumn = 0;
+                    console.log("setting preview column to 0");
+            }
+            // if (vscode.workspace.textDocuments.length + 1 === viewXExtension.lastNumberOfOpenedDocuments) {
+            //     // viewXExtension.previewColumn = 0;
+            // }
+            console.log("visible editors: " + vscode.window.visibleTextEditors.length);
+            vscode.window.visibleTextEditors.forEach(element => {
+                console.log("- : " + element.document.fileName);
+            });
         }
+        console.log("last number of opened: " + viewXExtension.lastNumberOfOpenedDocuments);
         viewXExtension.lastNumberOfOpenedDocuments = vscode.workspace.textDocuments.length;
+        console.log("workspace documents: " + viewXExtension.lastNumberOfOpenedDocuments);
+        console.log("preview column after close: " + viewXExtension.previewColumn)
     });
 
     disposables.push(vscode.commands.registerCommand("viewx.initProject", () => {
@@ -167,9 +203,12 @@ export function activate(context: vscode.ExtensionContext) {
             // });
         }
 
+        console.log("active file name: " + fileName);
+        console.log("preview column: " + viewXExtension.previewColumn);
 
         viewXExtension.generatePreviewHtmlForModelAsync(activeModelUri, () => {
             if (viewXExtension.previewColumn > 0) {
+                console.log("start preview, reload server");
                 Server.reload("preview.html");
             }
             else {
@@ -224,6 +263,7 @@ class ViewXExtension {
     public activeViewXModel: string;
     public lastPreviewedFileUri: vscode.Uri;
     public previewColumn: number = 0;
+    public previewPotentiallyClosed: boolean = false;
     public lastNumberOfOpenedDocuments: number = 0;
 
     constructor() {
@@ -245,6 +285,10 @@ class ViewXExtension {
                 // need to read config file synchronously, because we can end up using it while it has not been read yet
                 this.viewXProjectConfig = loadJsonFile.sync(`${workspacePath}/vxconfig.json`);
                 console.log("ucitao config json");
+
+                // start browser sync server only if it is valid viewX project
+                // TODO: enable running multiple instances
+                this.startServer();
             // need to catch the error in order to continue activating the extension
             } catch (error) {
                 console.log(error);
@@ -308,6 +352,7 @@ class ViewXExtension {
         // finally get URI of the preview file (hosted on web server) and show it
         const previewUri = Utility.getUriOfPreviewHtml();
         console.log("previewUri: " + previewUri);
+        console.log("open model on column: " + viewColumn);
         vscode.commands.executeCommand("vscode.previewHtml", previewUri, viewColumn, "Preview with WebServer").then(() => {
             this.lastNumberOfOpenedDocuments = vscode.window.visibleTextEditors.length;
             this.previewColumn = viewColumn;
