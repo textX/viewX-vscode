@@ -55,99 +55,31 @@ export function activate(context: vscode.ExtensionContext) {
         const settings = viewXExtension.serverConfig.get("isWatchConfiguration") as boolean;
         if (settings) {
             viewXExtension.resumeServer();
-            vscode.window.showInformationMessage("Resume the Web Server.");
         }
     });
 
-    // When file is saved, reload browser.
     vscode.workspace.onDidSaveTextDocument((e) => {
-        console.log("doc save!");
-        // re-generate preview html file when model file is saved (apply changes)
-        console.log("active model: " + viewXExtension.activeViewXModel)
         if (viewXExtension.activeViewXModel !== undefined) {
             let activeModelUri: vscode.Uri = vscode.window.activeTextEditor.document.uri;
-            console.log(viewXExtension.previewColumn);
-            console.log(activeModelUri.path);
-            console.log(viewXExtension.lastPreviewedFileUri.path);
-            if (viewXExtension.previewColumn > 0 && activeModelUri.path === viewXExtension.lastPreviewedFileUri.path) {
+            if (viewXExtension.isPreviewActive && activeModelUri.path === viewXExtension.lastPreviewedFileUri.path) {
+                // re-generate preview html file when model file is saved (apply changes)
                 viewXExtension.generatePreviewHtmlForModelAsync(activeModelUri, () => {
-                    console.log("callback reload!");
-                    Server.reload("preview.html");
+                    // when file is saved, reload browser.
+                    viewXExtension.openModelPreview(() => { Server.reload("preview.html"); });
                 });
             }
         }
-        // and then reload the web server to apply changes in preview
-        // Server.reload("\preview.html");
-        // setTimeout(() => {
-        //     console.log("posle 3 sec, reload!")
-        //     Server.reload("preview.html");
-        // }, 3000);
-    });
-
-    // unset active viewXModel unless if preview is shown
-    vscode.window.onDidChangeActiveTextEditor(editor => {
-        console.log("changed active editor");
-        console.log(editor.document.fileName);
-        console.log("last number of opened: " + viewXExtension.lastNumberOfOpenedDocuments);
-        console.log("currently opened: " + viewXExtension.lastNumberOfOpenedDocuments);
-
-        // since preview close flag is set even when it just looses focus
-        // we check here if any new document was opened
-        // if not then it is our best bet that preview is actually closed so we reset preview column to 0
-        if (viewXExtension.previewPotentiallyClosed &&
-            vscode.workspace.textDocuments.length < viewXExtension.lastNumberOfOpenedDocuments) {
-                viewXExtension.previewColumn = 0;
-                console.log("setting preview column to 0");
-        }
-        viewXExtension.lastNumberOfOpenedDocuments = vscode.workspace.textDocuments.length;
-        viewXExtension.previewPotentiallyClosed = false;
-        // if (editor !== undefined && editor.document.fileName === "preview.html") {
-        //     if (vscode.window.visibleTextEditors.length < viewXExtension.lastNumberOfColumns) {
-        //         viewXExtension.previewColumn = 0;
-        //         console.log("preview closed!");
-        //     }
-        // }
-        // if (editor !== undefined && editor.document.fileName !== "preview.html") {
-        //     viewXExtension.activeViewXModel = undefined;
-        //     console.log("unset active");
-        // }
-    });
-
-    vscode.window.onDidChangeVisibleTextEditors(visibleEditors => {
-        console.log("onDidChangeVisibleTextEditors, count: " + visibleEditors.length);
-        visibleEditors.forEach(element => {
-            console.log("+ : " + element.document.fileName);
-        });
     });
 
     vscode.workspace.onDidCloseTextDocument(document => {
-        // this is currently a VS Code bug
         // https://github.com/Microsoft/vscode/issues/33728
         // there is no way to find out if file has been closed
-        console.log("close document");
-        console.log(document.fileName)
-        console.log("preview column: " + viewXExtension.previewColumn)
+        // it is good that close event is not fired while preview is visible (switched from another view column)
+        // so when it is not visible we can set the flag and trigger preview showing again
+        // since it will not create another tab if it is not actually closed, it will create new if it is
         if (document !== undefined && document.isClosed && document.uri.path === "/preview.html") {
-            // this is workaround, best bet that preview is closed
-            viewXExtension.previewPotentiallyClosed = true;
-            console.log("preview potentially closed");
-            // if preview is last document in editor, we must check here since activate will not trigger
-            if (vscode.workspace.textDocuments.length < viewXExtension.lastNumberOfOpenedDocuments) {
-                    viewXExtension.previewColumn = 0;
-                    console.log("setting preview column to 0");
-            }
-            // if (vscode.workspace.textDocuments.length + 1 === viewXExtension.lastNumberOfOpenedDocuments) {
-            //     // viewXExtension.previewColumn = 0;
-            // }
-            console.log("visible editors: " + vscode.window.visibleTextEditors.length);
-            vscode.window.visibleTextEditors.forEach(element => {
-                console.log("- : " + element.document.fileName);
-            });
+            viewXExtension.isPreviewActive = false;
         }
-        console.log("last number of opened: " + viewXExtension.lastNumberOfOpenedDocuments);
-        viewXExtension.lastNumberOfOpenedDocuments = vscode.workspace.textDocuments.length;
-        console.log("workspace documents: " + viewXExtension.lastNumberOfOpenedDocuments);
-        console.log("preview column after close: " + viewXExtension.previewColumn)
     });
 
     disposables.push(vscode.commands.registerCommand("viewx.initProject", () => {
@@ -166,13 +98,13 @@ export function activate(context: vscode.ExtensionContext) {
                     let projectName = result;
                     let options = {
                         mode: "text",
-                        pythonPath: `${viewXExtension.viewXVEnvPath}/Scripts/python`,
                         // pythonPath: "C:/Users/dkupco/VEnvs/viewx/Scripts/python", // DEV
+                        pythonPath: `${viewXExtension.viewXVEnvPath}/Scripts/python`,
                         args: [projectPath, projectName]
                     };
 
-                    let pyInterpreter = `${viewXExtension.extensionPath}/src/python/viewx_init_project.py`;
                     // let pyInterpreter = "C:/Users/dkupco/Documents/GitHub/viewX-vscode/src/python/viewx_init_project.py"; // DEV
+                    let pyInterpreter = `${viewXExtension.extensionPath}/src/python/viewx_init_project.py`;
 
                     pythonShell.run(pyInterpreter, options, function (err, results) {
                         // if (err) throw err;
@@ -188,32 +120,17 @@ export function activate(context: vscode.ExtensionContext) {
     }));
 
     disposables.push(vscode.commands.registerCommand("viewx.previewModel", () => {
-
         let activeModelUri: vscode.Uri = vscode.window.activeTextEditor.document.uri;
         let fileName: string = Utility.getFileNameFromFileUriPath(activeModelUri.path);
         let viewXModel: string = viewXExtension.findMatchingViewXModel(fileName);
-
         if (viewXModel === undefined) {
             vscode.window.showErrorMessage("There is no found viewX model that matches current file!");
             return;
-            // open vxconfig.json and add matching for current file name in the future
-            // vscode.workspace.openTextDocument(testPreview).then(document => {
-            //     console.log("opened: " + testPreview.fsPath);
-            //     vscode.window.showTextDocument(document);
-            // });
         }
-
-        console.log("active file name: " + fileName);
-        console.log("preview column: " + viewXExtension.previewColumn);
-
         viewXExtension.generatePreviewHtmlForModelAsync(activeModelUri, () => {
-            if (viewXExtension.previewColumn > 0) {
-                console.log("start preview, reload server");
+            viewXExtension.openModelPreview(() => {
                 Server.reload("preview.html");
-            }
-            else {
-                viewXExtension.openModelPreview();
-            }
+            });
         });
     }));
 
@@ -262,9 +179,7 @@ class ViewXExtension {
     public viewXProjectConfig: ViewXConfig;
     public activeViewXModel: string;
     public lastPreviewedFileUri: vscode.Uri;
-    public previewColumn: number = 0;
-    public previewPotentiallyClosed: boolean = false;
-    public lastNumberOfOpenedDocuments: number = 0;
+    public isPreviewActive: boolean;
 
     constructor() {
         this.extensionConfig = vscode.workspace.getConfiguration("viewX");
@@ -272,22 +187,16 @@ class ViewXExtension {
         this.extensionPath = vscode.extensions.getExtension(this.extensionConfig.get("fullExtensionName") as string).extensionPath;
         this.viewXVEnvPath = process.env[this.extensionConfig.get("envVariableName") as string];
 
-        console.log("extension path: " + this.extensionPath);
-        console.log("viewXVEnv: " + this.viewXVEnvPath);
-
         // if workspace is loaded, read viewX project configuration file
         let workspacePath = vscode.workspace.rootPath;
-        console.log("workspacePath: " + workspacePath);
         if (workspacePath !== undefined) {
             // require external node module for loading json
             const loadJsonFile = require("load-json-file");
             try {
                 // need to read config file synchronously, because we can end up using it while it has not been read yet
                 this.viewXProjectConfig = loadJsonFile.sync(`${workspacePath}/vxconfig.json`);
-                console.log("ucitao config json");
-
-                // start browser sync server only if it is valid viewX project
                 // TODO: enable running multiple instances
+                // start browser sync server only if it is valid viewX project
                 this.startServer();
             // need to catch the error in order to continue activating the extension
             } catch (error) {
@@ -309,11 +218,9 @@ class ViewXExtension {
         return viewXModel;
     }
 
-    public generatePreviewHtmlForModelAsync(modelUri: vscode.Uri, callback: Function) {
+    public generatePreviewHtmlForModelAsync(modelUri: vscode.Uri, callback?: Function) {
         let envPythonUri = vscode.Uri.file(`${this.viewXVEnvPath}/Scripts/python`);
         let workspaceUri = vscode.workspace.rootPath;
-        console.log("envPythonUri: " + envPythonUri.path);
-        console.log("workspaceUri: " + workspaceUri);
         let options = {
             mode: "text",
             pythonPath: envPythonUri.fsPath,
@@ -323,24 +230,19 @@ class ViewXExtension {
         };
 
         //let pyInterpreter = vscode.Uri.parse("file:///D:/Programiranje/MasterRad/viewx-vscode/src/viewx_interpreter.py");
-
         let pyInterpreterUri = vscode.Uri.file(`${this.extensionPath}/src/python/viewx_interpreter.py`);
-
-        console.log("viewModel: " + `${workspaceUri}/${this.activeViewXModel}`);
-        console.log("model: " + modelUri.fsPath);
-        console.log("before uri: " + `${this.extensionPath}/src/python/viewx_interpreter.py`);
-        console.log("pyInterpreter: " + pyInterpreterUri.fsPath);
 
         pythonShell.run(pyInterpreterUri.fsPath, options, function (err, results) {
             // if (err) throw err;
             // results is an array consisting of messages collected during execution
-            console.log("results: " + results);
-            callback();
+            if (callback) {
+                callback();
+            }
         });
         this.lastPreviewedFileUri = modelUri;
     }
 
-    public openModelPreview() {
+    public openModelPreview(callback?: Function) {
         // set ViewColumn (VS Code supports up to 3 columns max)
         let viewColumn: vscode.ViewColumn;
         if (vscode.window.activeTextEditor.viewColumn < 3) {
@@ -351,14 +253,22 @@ class ViewXExtension {
         let fileToPreview: vscode.Uri = vscode.window.activeTextEditor.document.uri;
         // finally get URI of the preview file (hosted on web server) and show it
         const previewUri = Utility.getUriOfPreviewHtml();
-        console.log("previewUri: " + previewUri);
-        console.log("open model on column: " + viewColumn);
-        vscode.commands.executeCommand("vscode.previewHtml", previewUri, viewColumn, "Preview with WebServer").then(() => {
-            this.lastNumberOfOpenedDocuments = vscode.window.visibleTextEditors.length;
-            this.previewColumn = viewColumn;
+        vscode.commands.executeCommand("vscode.previewHtml", previewUri, viewColumn, "viewX model preview").then(() => {
+            this.isPreviewActive = true;
+            if (callback) {
+                callback();
+            }
         }, (reason) => {
                 vscode.window.showErrorMessage(reason);
         });
+        // vscode.workspace.openTextDocument(previewUri).then(document => {
+        //     let options: vscode.TextDocumentShowOptions = {
+        //         viewColumn: viewColumn,
+        //         preserveFocus: false,
+        //         preview: true
+        //     };
+        //     vscode.window.showTextDocument(document, options);
+        // });
     }
 
     public startServer() {
@@ -378,6 +288,7 @@ class ViewXExtension {
     }
 
     public interpretCommand(command: string) {
+        console.log("interpret command: " + command);
         if (command.startsWith("select")) {
             console.log("select command");
             let args = command.split("|");
@@ -389,7 +300,7 @@ class ViewXExtension {
                 if (editor.document.uri.path === this.lastPreviewedFileUri.path) {
                     let startPosition = editor.document.positionAt(offset);
                     let endPosition = editor.document.positionAt(offset_end);
-                    // reverse selection (cursor is at the beginning of the definition)
+                    // reverse selection (cursor is at the beginning of the selection)
                     vscode.window.visibleTextEditors[0].selection = new vscode.Selection(endPosition, startPosition);
                     vscode.window.visibleTextEditors[0].revealRange(
                         new vscode.Range(startPosition, endPosition), vscode.TextEditorRevealType.InCenter);

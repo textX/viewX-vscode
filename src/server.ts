@@ -23,7 +23,8 @@ export class Server {
                 },
                 open: false,
                 port: port,
-                codeSync: isSync
+                codeSync: isSync,
+                online: false // enable offline usage
             };
         } else {
             options = {
