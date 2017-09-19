@@ -22,7 +22,11 @@ ApplyTo:
 ;
 
 Stylesheet:
-    'stylesheet' '=' style=STRING
+    '<style>' style=StyleProperty '</style>'
+;
+
+StyleProperty[noskipws]:
+    /(.|\n)*?(?=<\/style>)/
 ;
 
 class_view:

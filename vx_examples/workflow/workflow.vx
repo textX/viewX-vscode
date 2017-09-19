@@ -1,6 +1,7 @@
 tximport Workflow from "./../../tx_samples/workflow/workflow.tx"
 
-stylesheet = '[{
+<style>
+[{
     "selector": "node.task",
     "style": {
         "shape": "rectangle",
@@ -33,7 +34,8 @@ stylesheet = '[{
         "line-style": "dotted",
         "label": "data(label)"
     }
-}]'
+}]
+</style>
 
 view Task as Rectangle
 {
