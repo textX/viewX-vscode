@@ -5,6 +5,7 @@ Module which serves as a viewX model interpreter.
 import sys
 import os
 from textx.metamodel import metamodel_from_file
+from textx.model import children_of_type
 import preview_generator
 import cytoscape_helper as cy
 import cytoscape_rule_engine as cre
@@ -43,6 +44,8 @@ class ViewXInterpreter(object):
         print(type(model.__getattribute__('_tx_attrs')))
         print(model.__getattribute__('_tx_attrs').items())
         print(dir(view_model.views[0]))
+
+        # children = children_of_type('Event', model)
 
         for view in view_model.views:
             print()
@@ -217,7 +220,8 @@ class ViewXInterpreter(object):
             #     return elements
             # else:
             parent = self.find_view_parent_tx_type(item, view, self.model)
-            graph_element.add_data('parent', parent.__hash__())
+            if parent is not None:
+                graph_element.add_data('parent', parent.__hash__())
 
         print()
         print('-*-**-*-**-*-')
@@ -385,6 +389,7 @@ class ViewXInterpreter(object):
                     print('else1 - single item')
             else:
                 print('not value1.cont')
+        return None
 
     def update_links(self, item, item_links):
         """
@@ -441,7 +446,7 @@ def build_path_from_import(view_model, _import):
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print("Usage: python {} <view_model> <model>".format(sys.argv[0]))
+        print("Usage: python {} <view_model> <model> [<socketPort>]".format(sys.argv[0]))
     else:
         viewx_grammar_folder = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'grammar')
         view_meta_model = metamodel_from_file(os.path.join(viewx_grammar_folder, 'viewX.tx'))
@@ -471,4 +476,5 @@ if __name__ == '__main__':
         for lk, lv in viewx_interpreter.links.items():
             print('{} : {}'.format(lk, lv))
 
-        preview_generator.generate(view_model, target_model, viewx_interpreter)
+        socket_port = sys.argv[3] if sys.argv.__len__() > 3 else '3002'
+        preview_generator.generate(view_model, target_model, viewx_interpreter, socket_port)

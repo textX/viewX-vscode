@@ -1,4 +1,10 @@
-function startSocketServer() {
+/** 
+ * Create socket.io server listening on provided port on localhost.
+ * The server will separate the extension to one and preview clients to another room
+ * and will distribute all commands comming from one room to another.
+ * @param {Number} port
+*/
+function startSocketServer(port) {
     // create express app
     var app = require('express')();
     // pass app to node.js server
@@ -7,6 +13,12 @@ function startSocketServer() {
     var io = require('socket.io')(http);
     // must enable cors
     var cors = require('cors');
+    // TODO: allow access only from localhost
+    // var corsOptions = {
+    //     origin: 'http://localhost:*'
+    // };
+    // io.set('origins', 'http://localhost:* localhost:*');
+    // app.use(cors(corsOptions));
     app.use(cors());
 
     app.get('/', function(req, res){
@@ -44,8 +56,8 @@ function startSocketServer() {
         })
     });
 
-    http.listen(3002, function(){
-        console.log('listening on *:3002');
+    http.listen(port, function(){
+        console.log('listening on localhost:' + port);
     });
 }
 // export the method to enable code completion when imported in .ts

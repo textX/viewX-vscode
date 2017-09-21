@@ -6,7 +6,7 @@ TEMPLATE_NAME = 'preview.template'
 TEMPLATE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates'))
 OUTPUT_PATH = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname((__file__)))), 'graph_preview'))
 
-def generate(view_model, model, viewx_interpreter):
+def generate(view_model, model, viewx_interpreter, socket_port):
 
     # Initialize template engine.
     jinja_env = jinja2.Environment(
@@ -22,6 +22,7 @@ def generate(view_model, model, viewx_interpreter):
     rendered = template.render({'date': date,
                                 'view_model': view_model,
                                 'model': model,
+                                'socket_port': socket_port,
                                 'elements': viewx_interpreter.elements.values(),
                                 'styles': viewx_interpreter.styles})
 

@@ -26,13 +26,14 @@ export function activate(context: vscode.ExtensionContext) {
     let disposables = [];
     let viewXExtension = new ViewXExtension();
 
+    let socketPort: number = viewXExtension.socketConfig.get("port") as number;
+    console.log(socketPort);
     // start socket server
-    socketserver.startSocketServer();
+    socketserver.startSocketServer(socketPort);
 
     // connect to socket server and join extension room
-    const socket = io("http://localhost:3002");
+    const socket = io(`http://localhost:${socketPort}`);
     socket.emit("ext-room");
-
     socket.on("ext-receive-command", function(command) {
         console.log("extension: command received - " + command);
         viewXExtension.interpretCommand(command);
@@ -174,6 +175,7 @@ class ViewXExtension {
     public viewXVEnvPath: string;
     public extensionConfig: vscode.WorkspaceConfiguration;
     public serverConfig: vscode.WorkspaceConfiguration;
+    public socketConfig: vscode.WorkspaceConfiguration;
 
     // changeable values
     public viewXProjectConfig: ViewXConfig;
@@ -184,6 +186,7 @@ class ViewXExtension {
     constructor() {
         this.extensionConfig = vscode.workspace.getConfiguration("viewX");
         this.serverConfig = vscode.workspace.getConfiguration("viewX.previewServer");
+        this.socketConfig = vscode.workspace.getConfiguration("viewX.socketServer");
         this.extensionPath = vscode.extensions.getExtension(this.extensionConfig.get("fullExtensionName") as string).extensionPath;
         this.viewXVEnvPath = process.env[this.extensionConfig.get("envVariableName") as string];
 
@@ -226,7 +229,7 @@ class ViewXExtension {
             pythonPath: envPythonUri.fsPath,
             // pythonOptions: ["-u"],
             // scriptPath: "path/to/my/scripts",
-            args: [`${workspaceUri}/${this.activeViewXModel}`, modelUri.fsPath]
+            args: [`${workspaceUri}/${this.activeViewXModel}`, modelUri.fsPath, this.socketConfig.get("port")]
         };
 
         //let pyInterpreter = vscode.Uri.parse("file:///D:/Programiranje/MasterRad/viewx-vscode/src/viewx_interpreter.py");

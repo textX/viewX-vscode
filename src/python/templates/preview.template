@@ -52,7 +52,7 @@
         // timestamp of the last click event
         var lastClickTimeStamp = 0.00;
 		
-        const socket = io('http://localhost:3002');
+        const socket = io('http://localhost:{{socket_port}}');
         // join to preview room
         socket.emit("preview-room");
         cy.elements().on('click', (event) => {

@@ -30,6 +30,8 @@ tximport StateMachine from "./../../tx_samples/state_machine/state_machine.tx"
     ]
 </style>
 
+view StateMachine as Graph
+
 view State as Roundrectangle
 {
     label: State.name
@@ -41,7 +43,12 @@ view State as Roundrectangle
     }
 }
 
-view Command as Star inside State
+view Command as Vee inside State
 {
     label: Command.name
+}
+
+view Event as Star where this = StateMachine.resetEvents
+{
+    label: Event.name
 }

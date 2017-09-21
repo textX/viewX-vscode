@@ -62,7 +62,7 @@
             "null"
           ],
           "default": 3000,
-          "description": "Port number of the Web Server."
+          "description": "Port number of the WebSync server."
         },
         "viewX.previewServer.proxy": {
           "type": "string",
@@ -73,6 +73,14 @@
           "type": "boolean",
           "default": true,
           "description": "Whether synchronized or not."
+        },
+        "viewX.socketServer.port": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 3002,
+          "description": "Port number of the socket.io server."
         }
       }
     },
