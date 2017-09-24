@@ -47,11 +47,19 @@ ShapeProperty:
 ;
 
 Label:
-    'label' ':' (label=STRING | label=ClassLabel) ('{' label_properties+=LabelProperty '}')?
+    'label' ':' (pre_label=PreLabel)? (label=STRING | label=ClassLabel) ('{' label_properties+=LabelProperty '}')? (post_label=PostLabel)?
 ;
 
 ClassLabel:
     class_view=[class_view] ('.' class_properties+=ID['.'])?
+;
+
+PreLabel:
+    label=STRING '+'
+;
+
+PostLabel:
+    '+' label=STRING
 ;
 
 // edge related rules

@@ -5,7 +5,7 @@ Module which serves as a viewX model interpreter.
 import sys
 import os
 from textx.metamodel import metamodel_from_file
-from textx.model import children_of_type, parent_of_type
+from textx.model import children_of_type
 import preview_generator
 import cytoscape_helper as cy
 import cytoscape_rule_engine as cre
@@ -34,7 +34,7 @@ class ViewXInterpreter(object):
         Main interpreting logic.
 
         :param model: textx model that should be interpreted
-        
+
         :return: /
         """
 
@@ -118,7 +118,15 @@ class ViewXInterpreter(object):
             else:
                 element_label = label_property
 
-        # if element is edge        
+            # prepend/append pre_label/post_label if defined
+            pre_label = self.get_class_property(['parent', 'pre_label', 'label'], label_property)
+            if type(pre_label) is str:
+                element_label = pre_label + element_label
+            post_label = self.get_class_property(['parent', 'post_label', 'label'], label_property)
+            if type(post_label) is str:
+                element_label = element_label + post_label
+
+        # if element is edge
         if is_edge:
             start_element = None
             end_element = None
@@ -218,13 +226,11 @@ class ViewXInterpreter(object):
         :return: resolved property or None if not found
         """
         result_property = starting_item
-        print('result_property - {}'.format(result_property))
-        print('class_properties - {}'.format(class_properties))
         for class_prop in class_properties:
             if hasattr(result_property, class_prop):
                 result_property = result_property.__getattribute__(class_prop)
-        print('return')
-        print(result_property)
+            else:
+                return None
         return result_property
 
     def item_contains_property_by_structure(self, class_properties, starting_item, item_to_find):
@@ -312,80 +318,68 @@ class ViewXInterpreter(object):
         return resolved_properties
 
 
-    def find_view_parent_tx_type(self, tx_type, view_type, tx_root_type):
+    def find_view_parent_tx_type(self, tx_item, view, tx_root_item):
         """
-        Method that finds parent of the passed tx_type, starting from the tx_root_type.
-        """
-        print()
-        print('---find parent---')
+        Method that finds parent of the passed tx_item, starting from the tx_root_item.
 
+        :param tx_item: textx type instance for which to find parent
+
+        :param view: view which holds defined parent textx type for tx_item
+
+        :param tx_root_item: textx type instance from which to start search
+        
+        :return: parent textx type instance of the tx_item
+        """
         traversed_types = []
-        traversed_types.append(tx_root_type.__class__.__name__)
+        traversed_types.append(tx_root_item.__class__.__name__)
 
         # find parent
-        for key1, value1 in tx_root_type._tx_attrs.items():
-            print("1-3. {}".format(key1))
+        for key1, value1 in tx_root_item._tx_attrs.items():
             # if defined get the property
             if value1.cont:
-                print('value1.cont')
-                items1 = tx_root_type.__getattribute__(key1)
-                print("1-4. {}".format(items1))
-                # if non-empty list
-                #
-                # match also single item
-                #
+                items1 = tx_root_item.__getattribute__(key1)
+                # parent is list of items
                 if items1.__class__.__name__ == 'list':
                     first1 = items1[0] if items1.__len__() > 0 else None
-                    if first1 and view_type.parent_view is not None and first1.__class__.__name__ == view_type.parent_view.name:
-                        print('match1 - parent type found')
-                        for item1 in items1:
-                            # if inside condition defined
-
-                            if view_type.conditional_parent is not None:
-                                print()
-                                print('* inside condition defined')
-                                print(view_type)
-                                print(tx_type)
-                                print('tx_type - {}'.format(tx_type.__hash__()))
-
-                                print()
-                                print(item1)
-                                print('item1 - {}'.format(item1.__hash__()))
-                                print(view_type.class_properties)
-
-                                if item1 not in self.existing_parents and self.item_contains_property_by_structure(view_type.class_properties, item1, tx_type):
-                                    print('conditional parent found')
-                                    print(item1)
-                                    return item1
-
-                            # find child
-                            for key2, value2 in item1._tx_attrs.items():
-                                print("2-3. {}".format(key2))
-                                items2 = item1.__getattribute__(key2)
-                                print("2-4. {}".format(items2))
-                                # if non-empty list
-                                #
-                                # match also single item
-                                #
-                                if items2.__class__.__name__ == 'list':
-                                    first2 = items2[0] if items2.__len__() > 0 else None
-                                    if first2 and first2.__class__.__name__ == tx_type.__class__.__name__:
-                                        print('match2 - children type found')
-                                        for item2 in items2:
-                                            if tx_type.__hash__() == item2.__hash__():
-                                                print('* found exact child {} of type {}'.format(tx_type.__hash__(), tx_type))
-                                                return item1
-                                        break
-                                else:
-                                    print('else2 - child of found parent is single item')
-                        break
-                    else:
-                        print('else3 - children not of correct type')
-                        # self.find_view_parent_tx_type(tx_type, view_type, first1)
+                    if first1 and view.parent_view is not None:
+                        # if any of found items is type of parent type defined in view
+                        if first1.__class__.__name__ == view.parent_view.name:
+                            for item1 in items1:
+                                # find child
+                                for key2, value2 in item1._tx_attrs.items():
+                                    items2 = item1.__getattribute__(key2)
+                                    # child is list of items
+                                    if items2.__class__.__name__ == 'list':
+                                        first2 = items2[0] if items2.__len__() > 0 else None
+                                        if first2 and first2.__class__.__name__ == tx_item.__class__.__name__:
+                                            for item2 in items2:
+                                                if tx_item.__hash__() == item2.__hash__():
+                                                    return item1
+                                            break
+                                    # child is single item
+                                    else:
+                                        if items2.__class__.__name__ == tx_item.__class__.__name__:
+                                            return item1
+                # parent is single item
                 else:
-                    print('else1 - single item')
-            else:
-                print('not value1.cont')
+                    if items1 and view.parent_view is not None:
+                        if items1.__class__.__name__ == view.parent_view.name:
+                            for item1 in items1:
+                                # find child
+                                for key2, value2 in item1._tx_attrs.items():
+                                    items2 = item1.__getattribute__(key2)
+                                    # child is list of items
+                                    if items2.__class__.__name__ == 'list':
+                                        first2 = items2[0] if items2.__len__() > 0 else None
+                                        if first2 and first2.__class__.__name__ == tx_item.__class__.__name__:
+                                            for item2 in items2:
+                                                if tx_item.__hash__() == item2.__hash__():
+                                                    return item1
+                                            break
+                                    # child is single item
+                                    else:
+                                        if items2.__class__.__name__ == tx_item.__class__.__name__:
+                                            return item1
         return None
 
     def update_links(self, element, element_links):

@@ -50,5 +50,6 @@ view Command as Vee inside State
 
 view Event as Star where this = StateMachine.resetEvents
 {
-    label: Event.name
+
+    label: 'resetEvents -> ' + Event.name
 }
