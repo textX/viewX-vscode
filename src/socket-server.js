@@ -21,39 +21,51 @@ function startSocketServer(port) {
     // app.use(cors(corsOptions));
     app.use(cors());
 
-    app.get('/', function(req, res){
-        res.sendFile(__dirname + '/test-socket.html');
-    });
-
+    var debugMode = false;
+    
     io.on('connection', function(socket){
         // distribute sockets to rooms
-        socket.on('ext-room', function(room) {
+        socket.on('ext-room', function(debug) {
             console.log('extension room joined');
             socket.join('extension');
-            io.to('logroom').emit('chat message', 'extension room joined');
+            debugMode = debug;
+            if(debugMode) {
+                app.get('/', function(req, res){
+                    res.sendFile(__dirname + '/test-socket.html');
+                });
+                io.to('logroom').emit('chat message', 'extension room joined');
+            }
         });
         socket.on('preview-room', function(room) {
             console.log('preview room joined');
             socket.join('preview');
-            io.to('logroom').emit('chat message', 'preview room joined');
+            if(debugMode) {
+                io.to('logroom').emit('chat message', 'preview room joined');
+            }
         });
 
         socket.on('ext-send-command', function(command) {
             console.log('extension sending command "' + command + '" to preview');
             io.to('preview').emit('preview-receive-command', command);
-            io.to('logroom').emit('chat message', 'extension sending command ' + command + ' to preview');
+            if(debugMode) {
+                io.to('logroom').emit('chat message', 'extension sending command ' + command + ' to preview');
+            }
         });
         
         socket.on('preview-send-command', function(command) {
             console.log('preview sending command "' + command + '" to extension');
             io.to('extension').emit('ext-receive-command', command);
-            io.to('logroom').emit('chat message', 'preview sending command ' + command + ' to extension');
+            if(debugMode) {
+                io.to('logroom').emit('chat message', 'preview sending command ' + command + ' to extension');
+            }
         });
 
-        socket.on('logroom', function(msg) {
-            socket.join('logroom');
-            io.emit('chat message', 'logroom created!');
-        })
+        if(debugMode) {
+            socket.on('logroom', function(msg) {
+                socket.join('logroom');
+                io.emit('chat message', 'logroom created!');
+            })
+        }
     });
 
     http.listen(port, function(){

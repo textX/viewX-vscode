@@ -51,6 +51,11 @@
           "default": "viewXVEnv",
           "description": "Name of the environment variable which holds path to the viewX python virtual environment."
         },
+        "viewX.canPreviewActiveDocument": {
+          "type": "boolean",
+          "default": false,
+          "description": "If active document can be previewed. Defined by file extension and viewX model within loaded workspace."
+        },
         "viewX.previewServer.isWatchConfiguration": {
           "type": "boolean",
           "default": true,
@@ -81,13 +86,19 @@
           ],
           "default": 3002,
           "description": "Port number of the socket.io server."
+        },
+        "viewX.socketServer.debugMode": {
+          "type": "boolean",
+          "default": true,
+          "description": "Debug mode for socket.io server."
         }
       }
     },
     "commands": [
       {
         "command": "viewx.initProject",
-        "title": "viewX: Initialize viewX project"
+        "title": "viewX: Initialize project",
+        "category": "viewX"
       },
       {
         "command": "viewx.previewModel",
@@ -106,8 +117,8 @@
         "title": "viewX: Resume the web server"
       },
       {
-        "command": "viewx.sendCommand",
-        "title": "viewX: Send command"
+        "command": "viewx.fitDefinition",
+        "title": "viewX: Fit definition on graph"
       }
     ],
     "keybindings": [
@@ -132,10 +143,38 @@
         "key": "ctrl+alt+v r"
       },
       {
-        "command": "viewx.sendCommand",
-        "key": "ctrl+alt+v c"
+        "command": "viewx.fitDefinition",
+        "key": "ctrl+alt+v f"
       }
-    ]
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "viewx.initProject",
+          "group": "group@1",
+          "when": "explorerResourceIsFolder"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "viewx.previewModel",
+          "group": "group@2",
+          "when": "config.viewX.canPreviewActiveDocument"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "viewx.previewModel",
+          "group": "group@2",
+          "when": "config.viewX.canPreviewActiveDocument"
+        },
+        {
+          "command": "viewx.fitDefinition",
+          "group": "group@2",
+          "when": "editorTextFocus"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "tsc -p ./ --allowJs",

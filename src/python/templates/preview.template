@@ -44,10 +44,19 @@
             layout: {
                 name: 'circle',
                 fit: true,
-                padding: 30,
+                padding: 10,
                 avoidOverlap: true
-            }
+            },
+            // decrease zoom sensitivity
+            wheelSensitivity: 0.2
         });
+
+        // exntension fix: initial centering graph
+        if (window.clientInformation.appVersion.indexOf(" Electron/") > -1) {
+            var padding = Math.min(window.screen.height, window.screen.width) / 4;
+            // workaround for centering bug (moving by y-axis offset)
+            cy.panBy({x: 0, y: -padding / 2});
+        }
 
         // timestamp of the last click event
         var lastClickTimeStamp = 0.00;

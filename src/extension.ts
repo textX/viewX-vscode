@@ -33,7 +33,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // connect to socket server and join extension room
     const socket = io(`http://localhost:${socketPort}`);
-    socket.emit("ext-room");
+    socket.emit("ext-room", viewXExtension.socketConfig.get("debugMode") as boolean);
     socket.on("ext-receive-command", function(command) {
         console.log("extension: command received - " + command);
         viewXExtension.interpretCommand(command);
@@ -83,19 +83,36 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
-    disposables.push(vscode.commands.registerCommand("viewx.initProject", () => {
-        vscode.window.showInputBox({
-            prompt: "Please insert a path where you want to setup a ViewX project",
-            placeHolder: "Path to the project",
-            ignoreFocusOut: true
-        }).then(result => {
-            if (result !== undefined) {
-                let projectPath = result;
-                vscode.window.showInputBox({
-                    prompt: "Please insert a name of the ViewX project",
-                    placeHolder: "Name of the project",
-                    ignoreFocusOut: true
-                }).then(result => {
+    // check whether newly active document can be previewed
+    vscode.window.onDidChangeActiveTextEditor(editor => {
+        if (editor !== undefined) {
+            let activeModelUri: vscode.Uri = editor.document.uri;
+            let fileName: string = Utility.getFileNameFromFileUriPath(activeModelUri.path);
+            let viewXModel: string = viewXExtension.findMatchingViewXModel(fileName);
+            viewXExtension.extensionConfig.update("canPreviewActiveDocument", (viewXModel !== undefined));
+        }
+    });
+
+    disposables.push(vscode.commands.registerCommand("viewx.initProject", (explorerUri: vscode.Uri) => {
+        if (explorerUri === undefined) {
+            vscode.window.showInputBox({
+                prompt: "Please insert a path where you want to setup a ViewX project",
+                placeHolder: "Path to the project",
+                ignoreFocusOut: true
+            }).then(result => initProject(result));
+        }
+        else {
+            initProject(explorerUri.fsPath);
+        }
+
+        function initProject(path: string) {
+            let projectPath = path;
+            vscode.window.showInputBox({
+                prompt: "Please insert a name of the ViewX project",
+                placeHolder: "Name of the project",
+                ignoreFocusOut: true
+            }).then(result => {
+                if (result !== undefined) {
                     let projectName = result;
                     let options = {
                         mode: "text",
@@ -115,24 +132,25 @@ export function activate(context: vscode.ExtensionContext) {
                             vscode.commands.executeCommand("vscode.openFolder", projectFolder, true);
                         }
                     });
-                });
-            }
-        });
+                }
+            });
+        };
     }));
 
     disposables.push(vscode.commands.registerCommand("viewx.previewModel", () => {
         let activeModelUri: vscode.Uri = vscode.window.activeTextEditor.document.uri;
-        let fileName: string = Utility.getFileNameFromFileUriPath(activeModelUri.path);
-        let viewXModel: string = viewXExtension.findMatchingViewXModel(fileName);
-        if (viewXModel === undefined) {
-            vscode.window.showErrorMessage("There is no found viewX model that matches current file!");
-            return;
-        }
-        viewXExtension.generatePreviewHtmlForModelAsync(activeModelUri, () => {
-            viewXExtension.openModelPreview(() => {
-                Server.reload("preview.html");
+        // let fileName: string = Utility.getFileNameFromFileUriPath(activeModelUri.path);
+        // let viewXModel: string = viewXExtension.findMatchingViewXModel(fileName);
+        if (viewXExtension.extensionConfig.get("canPreviewActiveDocument") as boolean) {
+            viewXExtension.generatePreviewHtmlForModelAsync(activeModelUri, () => {
+                viewXExtension.openModelPreview(() => {
+                    Server.reload("preview.html");
+                });
             });
-        });
+        }
+        else {
+            vscode.window.showErrorMessage("There is no found viewX model that matches current file!");
+        }
     }));
 
     disposables.push(vscode.commands.registerCommand("viewx.launchBrowser", () => {
@@ -150,12 +168,11 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage("Resume the Web Server.");
     }));
 
-    disposables.push(vscode.commands.registerCommand("viewx.sendCommand", () => {
+    disposables.push(vscode.commands.registerCommand("viewx.fitDefinition", (explorerUri: vscode.Uri) => {
         let cursorPosition = vscode.window.activeTextEditor.selection.start;
         let lineBeginning = new vscode.Position(cursorPosition.line, 0);
         let offset = vscode.window.activeTextEditor.document.offsetAt(lineBeginning);
         socket.emit("ext-send-command", `fit|offset=${offset}`);
-        vscode.window.showInformationMessage("Command sent: " + `fit|offset=${offset}`);
     }));
 
     // subscribe all commands
