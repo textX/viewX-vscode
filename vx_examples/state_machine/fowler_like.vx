@@ -6,7 +6,7 @@ tximport StateMachine from "./../../tx_samples/state_machine/state_machine.tx"
         // {"selector": "node.state", "style": {"shape": "roundrectangle", "background-color": "red", "border-width": 4, "border-style": "double", "border-color": "yellow", "label": "data(label)", "text-background-color": "lightgray", "text-background-opacity": 0.8, "text-background-shape": "rectangle", "font-size": 13, "font-style": "italic", "color": "black"}}
         // ,{"selector": "edge.state-transitions-to_state", "style": {"curve-style": "bezier", "arrow-scale": 2, "target-arrow-shape": "triangle", "target-arrow-fill": "hollow", "target-arrow-color": "blue", "label": "data(label)"}}
         // ,{"selector": "node.command", "style": {"shape": "star", "background-color": "yellow", "label": "data(label)", "font-size": 12, "font-style": "normal", "color": "white", "text-background-color": "black", "text-background-opacity": 0.5, "text-background-shape": "rectangle", "border-width": 2, "border-style": "solid", "border-color": "blue"}}
-        {"selector": "node.state", "style": {
+        {"selector": "node.state, node.event", "style": {
             "shape": "roundrectangle", "width": "label", "background-color": "white", "background-opacity": 0.4,
             "border-width": 4, "border-style": "solid", "border-color": "black", "border-opacity": 1,
             "label": "data(label)", "text-background-color": "white", "text-background-opacity": 0.2, "text-background-shape": "rectangle",
@@ -23,14 +23,14 @@ tximport StateMachine from "./../../tx_samples/state_machine/state_machine.tx"
             "label": "data(label)", "font-size": 18, "font-style": "normal", "color": "black",
             "text-background-color": "white", "text-background-opacity": 1, "text-background-shape": "roundrectangle"}}
         
-        ,{"selector": "node.state:selected", "style": {
+        ,{"selector": "node.state:selected, node.event:selected", "style": {
             "background-color": "red", "background-opacity": 0.1, "border-color": "red", "color": "red"}}
         ,{"selector": "node.state:selected node", "style": {
             "background-color": "red", "border-color": "red", "color": "red"}}
     ]
 </style>
 
-view StateMachine as Graph
+view StateMachine as None
 
 view State as Roundrectangle
 {

@@ -5,7 +5,7 @@ Module which serves as a viewX model interpreter.
 import sys
 import os
 from textx.metamodel import metamodel_from_file
-from textx.model import children_of_type
+from textx.model import children_of_type, parent_of_type
 import preview_generator
 import cytoscape_helper as cy
 import cytoscape_rule_engine as cre
@@ -32,30 +32,21 @@ class ViewXInterpreter(object):
     def interpret(self, model):
         """
         Main interpreting logic.
+
+        :param model: textx model that should be interpreted
+        
+        :return: /
         """
 
         self.model = model
 
         for view in view_model.views:
-            print(view.name)
-
-        print('--------------')
-
-        print(type(model.__getattribute__('_tx_attrs')))
-        print(model.__getattribute__('_tx_attrs').items())
-        print(dir(view_model.views[0]))
-
-        # children = children_of_type('Event', model)
-
-        for view in view_model.views:
-            print()
-            print("1. {}".format(view.name))
             # loop over model tx properties recursively and match them with defined views
-            self.match_view_within_type(model, view)
+            if view.shape.lower() != 'none':
+                self.match_view_within_type(model, view)
 
             if view_model.stylesheet is None:
                 # generate view styles
-                print('generate view styles')
                 visitor = cre.ViewStylePropertyVisitor(view)
                 property_link = None
                 for prop in view.properties:
@@ -73,59 +64,41 @@ class ViewXInterpreter(object):
         if self.links.__len__() > 0:
             self.create_links()
 
-    def match_view_within_type(self, tx_type, view, recursion=False):
-        print()
-        print('Match view within type')
-        print(view.name, tx_type.__class__.__name__, recursion)
-        print()
-        print(self.traversed_types)
-        if not recursion:
-            self.traversed_types.clear()
-        # if called by iterating over items recursively (not add_type) or if type not traversed yet
-        if recursion or not self.traversed_types.__contains__(tx_type.__class__.__name__):
-            # if not recursion:
-            print('traversed not contains {}, add it'.format(tx_type.__class__.__name__))
-            self.traversed_types.append(tx_type.__class__.__name__)
-            print(self.traversed_types)
-            # take all defined items within type
-            for key, value in tx_type._tx_attrs.items():
-                print("2. {}".format(key))
-                # if defined get the property
-                if value.cont:
-                    print('value.cont')
-                    items = tx_type.__getattribute__(key)
-                    print(items)
-                    # if non-empty list
-                    #
-                    # match also single item
-                    #
-                    if items.__class__.__name__ == 'list':
-                        first = items[0] if items.__len__() > 0 else None
-                        if first and first.__class__.__name__ == view.name:
-                            print('match inside view - list')
-                            for item in items:
-                                elements = self.build_graph_element(item, view)
-                                for el in elements:
-                                    self.elements.update(el)
-                        else:
-                            print('* else - not correct type')
-                            print(view)
-                            for item in items:
-                                self.match_view_within_type(item, view, True)
-                    else:
-                        print('single item')
-                else:
-                    print('not value.cont')
-        if recursion:
-            print('* leave recursion')
-            print()
+    def match_view_within_type(self, tx_type, view):
+        """
+        Utilize children_of_type method from textx module to return all elements that match textx type defined in view
+        starting from root tx_type.
+
+        :param tx_type: root tx_type to start searching from
+
+        :param view: defined view for contained textx type that should be found within element of tx_type
+
+        :return: /
+        """
+        children = children_of_type(view.name, tx_type)
+        conditional_parent = view.__getattribute__('conditional_parent')
+        if conditional_parent is None:
+            for child in children:
+                self.elements.update(self.build_graph_element(child, view))
+        # follow condition of defined parent properties
+        else:
+            elements_of_type = children_of_type(conditional_parent.name, self.model)
+            for parent in elements_of_type:
+                for child in children:
+                    if self.item_contains_property_by_structure(view.class_properties, parent, child):
+                        self.elements.update(self.build_graph_element(child, view))
 
     def build_graph_element(self, item, view):
-        # print(item.__getattribute__('_tx_attrs').items())
-        print()
-        print('****bge******')
+        """
+        Method for creating Cytoscape.js graph elements defined by specified textx item and view.
+
+        :param item: instance of textx type from which to create Cytoscape.js graph element
+
+        :param view: view which describes how graph element should be created
+
+        :return: Cytoscape.js graph element uniquely defined by textx instance's hash code
+        """
         graph_element = None
-        element_label = None
 
         # check item referencing properties (label, is_edge(connection points), parent...)
         label_property = None
@@ -187,7 +160,6 @@ class ViewXInterpreter(object):
                 if prop.__class__.__name__ == 'Label':
                     label = prop
                     break
-            link_labels = []
             if label: # if property link label is defined
                 if label.label.__class__.__name__ == 'ClassLabel':
                     link_labels = self.get_all_resolved_properties(label.label.class_properties, item)
@@ -219,27 +191,31 @@ class ViewXInterpreter(object):
             #         elements.append({clone.__hash__(): clone})
             #     return elements
             # else:
+
             parent = self.find_view_parent_tx_type(item, view, self.model)
+            # parent = parent_of_type(view.parent_view.name, item)
             if parent is not None:
                 graph_element.add_data('parent', parent.__hash__())
 
-        print()
-        print('-*-**-*-**-*-')
-        print('item - {}'.format(item))
-        print(dir(item))
-        print(item._tx_position)
         # add type definition offset
         graph_element.add_data('offset', item._tx_position)
         graph_element.add_data('offset_end', item._tx_position_end)
 
         # add class of view name (textx model type name)
         graph_element.add_class(view.name.lower())
-        return [{item.__hash__(): graph_element}]
+        return {item.__hash__(): graph_element}
     
 
     def get_class_property(self, class_properties, starting_item):
         """
         Resolve single item properties.
+
+        :param class_properties: property hierarchy used for retrieving specific item.
+        Each property must reference only single item.
+
+        :param starting_item: item from which to start resolving properties
+
+        :return: resolved property or None if not found
         """
         result_property = starting_item
         print('result_property - {}'.format(result_property))
@@ -255,10 +231,26 @@ class ViewXInterpreter(object):
         """
         Resolve class properties and check whether item_to_find can be found within starting_item
         following the class_properties structure.
+
+        :param class_properties: property hierarchy used for resolving
+
+        :param starting_item: textx type instance from which to start resolving
+
+        :param item_to_find: textx type instance to find
+
+        :return: True if item can be found else False
         """
+
         result_property = starting_item
         if class_properties.__len__() == 0:
-            return result_property.__hash__() == item_to_find.__hash__()
+            # if result is list, must check if any resulting items match searched item
+            if result_property.__class__.__name__ == 'list':
+                match_any = True
+                for result in result_property:
+                    match_any = match_any and result.__hash__() == item_to_find.__hash__()
+                return match_any
+            else:
+                return result_property.__hash__() == item_to_find.__hash__()
 
         if result_property.__class__.__name__ == 'list':
             # try for each item because not every item has to have defined all properties
@@ -281,8 +273,13 @@ class ViewXInterpreter(object):
 
     def get_all_resolved_properties(self, class_properties, tx_item):
         """
-        Resolve class properties and check whether item_to_find can be found within starting_item
-        following the class_properties structure.
+        Resolve class properties of tx_item following the class_properties structure.
+
+        :param class_properties: property hierarchy used for resolving
+
+        :param tx_item: textx type instance from which to start resolving
+
+        :return: all textx type instances that matched defined class property hierarchy
         """
         result_property = tx_item
         # if all class properties are used that means we have resolved all properties
@@ -391,18 +388,27 @@ class ViewXInterpreter(object):
                 print('not value1.cont')
         return None
 
-    def update_links(self, item, item_links):
+    def update_links(self, element, element_links):
         """
         Updates links to item's properties. All items are defined by their type in outter dictionary
         and all links are defined by their source item's hash code in inner dictionary.
+
+        :param element: element for which to update links
+
+        :param element_links: links to be updated for specified element
+
+        :return: / (updates private property of element links)
         """
-        link_dict = self.links.get(item.__class__.__name__, {})
-        link_dict.update({item.__hash__() : item_links})
-        self.links[item.__class__.__name__] = link_dict
+        link_dict = self.links.get(element.__class__.__name__, {})
+        link_dict.update({element.__hash__() : element_links})
+        self.links[element.__class__.__name__] = link_dict
 
     def create_links(self):
         """
         When all property links have been resolved they need to be created additionally.
+
+        :return: / (Updates private property of elements with newly created edges
+        for property links of existing graph elements)
         """
         new_edges = []
         # outter dictionary iteration
@@ -431,6 +437,12 @@ class ViewXInterpreter(object):
 def build_path_from_import(view_model, _import):
     """
     Build system path from defined import (relative '.' separated) path.
+
+    :param view_model: view model from which to resolve relative import
+
+    :param _import: relative import path
+
+    :return: absolute file system path of the import
     """
     path = os.path.dirname(view_model)
     _import = _import[1:-1] # remove ""

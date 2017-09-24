@@ -35,7 +35,7 @@ class_view:
 ;
 
 Shape:
-    'Graph' | 'State' | 'Line' | /\w+/
+    'None' | 'Graph' | 'State' | 'Line' | /\w+/
 ;
 
 ViewProperty:
