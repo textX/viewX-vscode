@@ -6,7 +6,7 @@ ViewXModel:
     // support wildcard * and separator ;
     (apply_to=ApplyTo)?
     (stylesheet=Stylesheet)?
-    views+=class_view
+    views+=ClassView
 ;
 
 Import:
@@ -29,8 +29,8 @@ StyleProperty[noskipws]:
     /(.|\n)*?(?=<\/style>)/
 ;
 
-class_view:
-    'view' name=ID 'as' shape=Shape ('inside' parent_view=[class_view])? ('where' 'this' '=' conditional_parent=[class_view] ('.' class_properties+=ID['.']))?
+ClassView:
+    'view' name=ID 'as' shape=Shape (('child' 'of' parent_view=[ClassView]) | ( 'inside' parent_shape=Shape))? ('where' 'this' '=' conditional_parent=[ClassView] ('.' class_properties+=ID['.']))?
     ('{' properties+=ViewProperty '}')?
 ;
 
@@ -47,11 +47,19 @@ ShapeProperty:
 ;
 
 Label:
+    view_label=ViewLabel | parent_label=ParentLabel
+;
+
+ViewLabel:
     'label' ':' (pre_label=PreLabel)? (label=STRING | label=ClassLabel) ('{' label_properties+=LabelProperty '}')? (post_label=PostLabel)?
 ;
 
+ParentLabel:
+    'parent_label' ':' (pre_label=PreLabel)? (label=STRING | label=ClassLabel) ('{' label_properties+=LabelProperty '}')? (post_label=PostLabel)?
+;
+
 ClassLabel:
-    class_view=[class_view] ('.' class_properties+=ID['.'])?
+    class_view=[ClassView] ('.' class_properties+=ID['.'])?
 ;
 
 PreLabel:
@@ -69,12 +77,12 @@ EdgeProperty:
 ;
 
 EdgeStartProperty:
-    'from' ':' class_view=[class_view] ('.' class_properties+=ID['.']) // this class property needs to be defined here as class_view
+    'from' ':' class_view=[ClassView] ('.' class_properties+=ID['.']) // this class property needs to be defined here as ClassView
     ('{' arrow_properties+=ArrowProperty '}')?
 ;
 
 EdgeEndProperty:
-    'to' ':' class_view=[class_view] ('.' class_properties+=ID['.'])
+    'to' ':' class_view=[ClassView] ('.' class_properties+=ID['.'])
     ('{' arrow_properties+=ArrowProperty '}')?
 ;
 
@@ -91,12 +99,12 @@ LinkProperties:
 ;
 
 LinkFromProperty:
-    'from' ':' ('this' | class_view=[class_view])?
+    'from' ':' ('this' | class_view=[ClassView])?
     ('{' arrow_properties+=ArrowProperty '}')?
 ;
 
 LinkToProperty:
-    'to' ':' class_view=[class_view] ('.' class_properties+=ID['.'])
+    'to' ':' class_view=[ClassView] ('.' class_properties+=ID['.'])
     ('{' arrow_properties+=ArrowProperty '}')?
 ;
 

@@ -103,8 +103,8 @@ class ViewXInterpreter(object):
         # check item referencing properties (label, is_edge(connection points), parent...)
         label_property = None
         for prop in view.properties:
-            if prop.__class__.__name__ == 'Label':
-                label_property = prop.label
+            if prop.__class__.__name__ == 'Label' and prop.view_label is not None:
+                label_property = prop.view_label.label
                 break
         is_edge = view.shape in cre.edge_shapes
 
@@ -165,26 +165,26 @@ class ViewXInterpreter(object):
             # if property link label is defined
             label = None
             for prop in property_link.properties:
-                if prop.__class__.__name__ == 'Label':
-                    label = prop
+                if prop.__class__.__name__ == 'Label' and prop.view_label is not None:
+                    label = prop.view_label.label
                     break
             if label: # if property link label is defined
-                if label.label.__class__.__name__ == 'ClassLabel':
-                    link_labels = self.get_all_resolved_properties(label.label.class_properties, item)
+                if label.__class__.__name__ == 'ClassLabel':
+                    link_labels = self.get_all_resolved_properties(label.class_properties, item)
                     for value_props, link_label in zip(transformed_links.values(), link_labels):
                         value_props.append(('label', link_label))
                 else:
                     # update label as string
-                    link_label = label.label
+                    link_label = label
                     for value_props in transformed_links.values():
                         value_props.append(('label', link_label))
 
             self.update_links(item, transformed_links)         
 
         graph_element.add_data('label', element_label)
-        
-        # add parent if defined
-        if view.parent_view is not None:
+
+        # if parent class view is defined
+        if hasattr(view, 'parent_view') and view.parent_view is not None:
             # if view.conditional_parent is not None:
             #     self.existing_parents.clear()
             #     parent = None
@@ -204,6 +204,28 @@ class ViewXInterpreter(object):
             # parent = parent_of_type(view.parent_view.name, item)
             if parent is not None:
                 graph_element.add_data('parent', parent.__hash__())
+
+        # if parent class view is defined
+        if hasattr(view, 'parent_shape') and view.parent_shape is not None:
+            print(view.parent_shape)
+            # TODO: add something that uniquely defines peg rule, should be class+parent+conditions because of css
+            container = self.find_element_with_class('{}-container'.format(view.name.lower()))
+            if container is None:
+                # create container element if not exists
+                container = cy.Node()
+                for prop in view.properties:
+                    if prop.__class__.__name__ == 'Label' and prop.parent_label is not None:
+                        label = prop.parent_label.label
+                        if label.__class__.__name__ == 'ClassLabel':
+                            # resolve item name
+                            element_label = self.get_class_property(label.class_properties, item)
+                        else:
+                            element_label = label
+                        container.add_data('label', element_label)
+                        break
+                container.add_class('{}-container'.format(view.name.lower()))
+                self.elements.update({container.__hash__(): container})
+            graph_element.add_data('parent', container.__hash__())
 
         # add type definition offset
         graph_element.add_data('offset', item._tx_position)
@@ -381,6 +403,20 @@ class ViewXInterpreter(object):
                                         if items2.__class__.__name__ == tx_item.__class__.__name__:
                                             return item1
         return None
+
+    def find_element_with_class(self, _class):
+        """
+        Searches created graph elements and finds the first one with defined class.
+
+        :param _class: A class which element should contain
+
+        :return: Graph element if found else None.
+        """
+        for element in self.elements.values():
+            if element.classes.split(' ')[0] == _class:
+                return element
+        return None
+
 
     def update_links(self, element, element_links):
         """
