@@ -1,0 +1,89 @@
+// this could be even moved to config file
+tximport StateMachine from "./../../tx_samples/state_machine/state_machine.tx"
+
+style:
+    // todo
+    {"selector": "node.state"
+        , "style": {
+            "width": "label",
+            "text-margin-y": 25, "padding": "35px", "text-outline-width": "2", "text-outline-color": "white",
+            "font-weight": "bold"
+        }
+    }
+    // compound node shapes
+    ,{"selector": "node.event-container"
+        , "style": {
+            "shape": "roundrectangle", "width": "label", "background-color": "white", "background-opacity": 0.4,
+            "border-width": 4, "border-style": "solid", "border-color": "black", "border-opacity": 1,
+            "label": "data(label)", "text-background-color": "white", "text-background-opacity": 0.2, "text-background-shape": "rectangle",
+            "text-margin-y": 25, "padding": "35px", "text-outline-width": "2", "text-outline-color": "white",
+            "font-size": 21, "font-style": "italic", "font-weight": "bold", "color": "black"
+        }
+    }
+    // edges
+    ,{"selector": "edge.state-transitions-to_state"
+        , "style": {
+            "target-distance-from-node": "5"
+        }
+    }
+    // compound nodes when selected
+    ,{"selector": "node.state:selected, node.event-container:selected"
+        , "style": {
+            "background-color": "red", "background-opacity": 0.1, "border-color": "red", "color": "red"
+        }
+    }
+    // contained nodes when compound nodes selected
+    ,{"selector": "node:selected node"
+    , "style": {
+            "background-color": "red", "border-color": "red", "color": "red"
+        }
+    }
+:style end
+
+view StateMachine as None
+
+view State as Roundrectangle
+{
+    label: State.name
+    {
+        font: black 21 italic
+        background: white 0.2
+    }
+    link
+    {
+        // from: implicit if not defined
+        to: State.transitions.to_state
+        {
+            arrow: black 2 triangle filled
+        }
+        label: State.transitions.event.name
+        {
+            font: 18
+        }
+    }
+    background: white 0.4
+    border: black 4 solid
+}
+
+view Command as Vee child of State
+{
+    label: Command.name
+    {
+        font: 18
+        background: white 1 round
+    }
+    background: black 0
+    border: white 0 solid 0
+}
+
+view Event as Vee inside Rectangle where this = StateMachine.resetEvents
+{
+    parent_label: 'Reset Events:'
+    label: Event.name
+    {
+        font: 18
+        background: white 1 round
+    }
+    background: black 0
+    border: white 0 solid 0
+}

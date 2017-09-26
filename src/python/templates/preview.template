@@ -29,9 +29,8 @@
                     {% endif %}
                 {% endfor %}
             ],
-            style: [{% if view_model.stylesheet.style -%}
-            {{view_model.stylesheet.style}}
-            {% else %}
+            style: [
+            {% if not overwrite_styles %}
                 {% for style in styles %}
                     {# workaround because join() filter splits each letter after applying to_json() function #}
                     {% if not loop.first %}
@@ -40,7 +39,13 @@
                     {{style.to_json()}}
                     {% endif %}
                 {% endfor %}
-            {%- endif %}],
+            {% endif %}
+            {# always append custom styles #}
+            {% if view_model.stylesheet.style %}
+                {% if not overwrite_styles %},{% endif %}
+                {{view_model.stylesheet.style}}
+            {% endif %}
+            ],
             layout: {
                 name: 'circle',
                 fit: true,

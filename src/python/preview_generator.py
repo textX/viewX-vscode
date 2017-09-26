@@ -24,7 +24,8 @@ def generate(view_model, model, viewx_interpreter, socket_port):
                                 'model': model,
                                 'socket_port': socket_port,
                                 'elements': viewx_interpreter.elements.values(),
-                                'styles': viewx_interpreter.styles})
+                                'styles': viewx_interpreter.styles,
+                                'overwrite_styles': viewx_interpreter.overwrite_styles})
 
     # Write rendered content to the file
     with open(os.path.join(OUTPUT_PATH, 'preview.html'), 'w') as preview_file:

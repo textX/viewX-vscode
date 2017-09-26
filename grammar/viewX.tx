@@ -22,11 +22,15 @@ ApplyTo:
 ;
 
 Stylesheet:
-    '<style>' style=StyleProperty '</style>'
+    (overwrite='overwrite')? 'style' ':' style=StyleProperty ':' 'style' 'end'
+;
+
+OverwriteStyle:
+    overwrite='overwrite'
 ;
 
 StyleProperty[noskipws]:
-    /(.|\n)*?(?=<\/style>)/
+    /(.|\n)*?(?=:\s*style\s*end)/
 ;
 
 ClassView:

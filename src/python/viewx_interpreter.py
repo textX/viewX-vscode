@@ -15,13 +15,14 @@ class ViewXInterpreter(object):
     ViewX model interpreter.
     """
     def __init__(self, viewmodel):
-        self.view_model = viewmodel # assign view model when initialized
-        self.model = None # different models can be interpreted with same viewmodel
-        self.elements = {} # all cytoscape.js graph elements
-        self.styles = [] # style definitions for elements
-        self.traversed_types = [] # visited types during recursive search algorithm
-        self.existing_parents = [] # used when multiple sources reference same element as inside
-        self.links = {} # store links when not all elements have been created yet
+        self.view_model = viewmodel  # assign view model when initialized
+        self.model = None  # different models can be interpreted with same viewmodel
+        self.elements = {}  # all cytoscape.js graph elements
+        self.styles = []  # style definitions for elements
+        self.overwrite_styles = False  # overwrite styles flag
+        self.traversed_types = []  # visited types during recursive search algorithm
+        self.existing_parents = []  # used when multiple sources reference same element as inside
+        self.links = {}  # store links when not all elements have been created yet
         # dictionary of dictionaries of dictionaries of target element (hash code) and list of properties (tuples)
         # {type1 : {source1 : {dst1 : [(prop1, value1), (prop2, value2)]}, {dst2: [(prop3, value3)]} },
         #           {source2 : {dst3 : [(prop4, value4)]}, {dst4 : [(prop5, value5)} },
@@ -45,7 +46,8 @@ class ViewXInterpreter(object):
             if view.shape.lower() != 'none':
                 self.match_view_within_type(model, view)
 
-            if view_model.stylesheet is None:
+            self.overwrite_styles = view_model.stylesheet.overwrite == 'overwrite'
+            if not self.overwrite_styles:
                 # generate view styles
                 visitor = cre.ViewStylePropertyVisitor(view)
                 property_link = None

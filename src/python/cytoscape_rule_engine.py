@@ -22,17 +22,19 @@ class PropertyVisitor(object):
 
     def visit_background(self, _property):
         print('visit_background')
-        if _property.background.__class__.__name__ == 'ColorFn':
+        if _property.background.color:
             self.view_style.style['background-color'] = _property.background.color
-        elif _property.background.__class__.__name__ == 'ImageFn':
+        elif _property.background.image:
             self.view_style.style['background-image'] = _property.background.image
             self.view_style.style['background-fit'] = 'cover cover'
+        self.view_style.style['background-opacity'] = _property.background.opacity if _property.background.opacity >= 0 else 1
     
     def visit_border(self, _property):
         print('visit_border')
+        self.view_style.style['border-color'] = _property.border.color
         self.view_style.style['border-width'] = _property.border.width
         self.view_style.style['border-style'] = _property.border.style
-        self.view_style.style['border-color'] = _property.border.color
+        self.view_style.style['border-opacity'] = _property.border.opacity if _property.border.opacity >= 0 else 1
 
     def visit_stroke(self, _property):
         print('visit_stroke')
@@ -43,25 +45,27 @@ class PropertyVisitor(object):
     def visit_label(self, _property):
         print('visit_label')
         self.view_style.style['label'] = 'data(label)'
-        for label_property in _property.label_properties:
-            if label_property.__class__.__name__ == 'LabelFont':
-                self.view_style.style['font-size'] = label_property.size
-                self.view_style.style['font-style'] = label_property.style if label_property.style else 'normal'
-                self.view_style.style['color'] = label_property.color if label_property.color else 'black'
-            elif label_property.__class__.__name__ == 'LabelBackground':
-                self.view_style.style['text-background-color'] = label_property.color if label_property.color else 'white'
-                self.view_style.style['text-background-opacity'] = label_property.opacity if label_property.opacity else 0
-                self.view_style.style['text-background-shape'] = label_property.shape if label_property.shape else 'rectangle'
+        if _property.view_label:
+            for label_property in _property.view_label.label_properties:
+                if label_property.__class__.__name__ == 'LabelFont':
+                    self.view_style.style['color'] = label_property.color if label_property.color else 'black'
+                    self.view_style.style['font-size'] = label_property.size
+                    self.view_style.style['font-style'] = label_property.style if label_property.style else 'normal'
+                elif label_property.__class__.__name__ == 'LabelBackground':
+                    self.view_style.style['text-background-color'] = label_property.color if label_property.color else 'white'
+                    self.view_style.style['text-background-opacity'] = label_property.opacity if label_property.opacity >= 0 else 1
+                    shape = label_property.shape if label_property.shape else ''
+                    self.view_style.style['text-background-shape'] = shape + 'rectangle'
 
     def visit_edge_property(self, _property):
         print('visit_edge_property')
         direction = 'source' if _property.__class__.__name__ in edge_starts else 'target'
         for arrow_property in _property.arrow_properties:
             self.view_style.style['curve-style'] = 'bezier' # needed to enable arrow shapes
+            self.view_style.style['{}-arrow-color'.format(direction)] = arrow_property.color if arrow_property.color else 'black'
             self.view_style.style['arrow-scale'] = arrow_property.scale
             self.view_style.style['{}-arrow-shape'.format(direction)] = arrow_property.shape if arrow_property.shape else 'none'
             self.view_style.style['{}-arrow-fill'.format(direction)] = arrow_property.fill if arrow_property.fill else 'filled'
-            self.view_style.style['{}-arrow-color'.format(direction)] = arrow_property.color if arrow_property.color else 'black'
 
     def visit_default(self, _property):
         pass
@@ -101,6 +105,7 @@ class LinkStylePropertyVisitor(PropertyVisitor):
             'Label': self.visit_label
         }
 
+        # form edge class as structured path (this uniquely identifies groups of property edges)
         self.view_style = ViewStyle('edge.{}-{}'.format(view.name.lower(), '-'.join(property_link.link_to.class_properties)))
         self.visit(property_link.link_from)
         self.visit(property_link.link_to)
