@@ -34,7 +34,7 @@ StyleProperty[noskipws]:
 ;
 
 ClassView:
-    'view' name=ID 'as' shape=Shape (('child' 'of' parent_view=[ClassView]) | ( 'inside' parent_shape=Shape))? ('where' 'this' '=' conditional_parent=[ClassView] ('.' class_properties+=ID['.']))?
+    'view' name=ID 'as' shape=Shape (('child' 'of' parent_view=[ClassView]) | ( 'inside' container=Shape))? ('where' 'this' '=' conditional_parent=[ClassView] ('.' class_properties+=ID['.']))?
     ('{' properties+=ViewProperty '}')?
 ;
 
@@ -43,7 +43,7 @@ Shape:
 ;
 
 ViewProperty:
-    ShapeProperty | Label | EdgeProperty
+    ShapeProperty | Label | EdgeProperty | ContainerProperty | SelectedProperty
 ;
 
 ShapeProperty:
@@ -51,7 +51,7 @@ ShapeProperty:
 ;
 
 Label:
-    view_label=ViewLabel | parent_label=ParentLabel
+    'label' ':' (pre_label=PreLabel)? (label=STRING | label=ClassLabel) ('{' label_properties+=LabelProperty '}')? (post_label=PostLabel)?
 ;
 
 ViewLabel:
@@ -113,6 +113,14 @@ LinkToProperty:
 ;
 
 ArrowProperty:
+    ArrowShapeProperty | EndpointDistance
+;
+
+EndpointDistance:
+    'distance' ':' distance=INT
+;
+
+ArrowShapeProperty:
     'arrow' ':' (color=Color)? scale=INT (shape=ArrowShape)? (fill=ArrowFill)?
 ;
 
@@ -122,6 +130,14 @@ ArrowShape:
 
 ArrowFill:
     'filled' | 'hollow'
+;
+
+ContainerProperty:
+    'container' '{' properties+=ViewProperty '}'
+;
+
+SelectedProperty:
+    'selected' '{' properties+=ViewProperty '}'
 ;
 
 Comment:

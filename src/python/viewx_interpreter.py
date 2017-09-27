@@ -51,16 +51,49 @@ class ViewXInterpreter(object):
                 # generate view styles
                 visitor = cre.ViewStylePropertyVisitor(view)
                 property_link = None
+                selected_property = None
                 for prop in view.properties:
+
+                    # create ViewStyle for selected state
+                    if prop.__class__.__name__ == 'SelectedProperty':
+                        selected_property = prop
                     visitor.visit(prop)
+
                     # check if view has link to it's properties
                     if prop.__class__.__name__ == 'PropertyLink':
                         property_link = prop
+
+                    # create styles for container shape
+                    if prop.__class__.__name__ == 'ContainerProperty':
+                        cont_sel_property = None
+                        container_visitor = cre.ViewStylePropertyVisitor(view, True)
+                        for cont_prop in prop.properties:
+                            # create ViewStyle for container in selected state
+                            if cont_prop.__class__.__name__ == 'SelectedProperty':
+                                cont_sel_property = cont_prop
+                            container_visitor.visit(cont_prop)
+                        self.styles.append(container_visitor.view_style)
+
+                        # append ViewStyle for container in selected state at the end
+                        if cont_sel_property:
+                            cont_sel_visitor = cre.ViewStylePropertyVisitor(view, True, ':selected')
+                            for sel_prop in cont_sel_property.properties:
+                                cont_sel_visitor.visit(sel_prop)
+                            self.styles.append(cont_sel_visitor.view_style)
+
                 self.styles.append(visitor.view_style)
+
                 # if it has, create style for property links
-                if property_link is not None:
+                if property_link:
                     link_visitor = cre.LinkStylePropertyVisitor(view, property_link)
                     self.styles.append(link_visitor.view_style)
+
+                # append ViewStyle for selected state at the end
+                if selected_property:
+                    sel_visitor = cre.ViewStylePropertyVisitor(view, False, ':selected')
+                    for sel_prop in prop.properties:
+                        sel_visitor.visit(sel_prop)
+                    self.styles.append(sel_visitor.view_style)
 
         # create property links if any
         if self.links.__len__() > 0:
@@ -105,8 +138,8 @@ class ViewXInterpreter(object):
         # check item referencing properties (label, is_edge(connection points), parent...)
         label_property = None
         for prop in view.properties:
-            if prop.__class__.__name__ == 'Label' and prop.view_label is not None:
-                label_property = prop.view_label.label
+            if prop.__class__.__name__ == 'Label':
+                label_property = prop.label
                 break
         is_edge = view.shape in cre.edge_shapes
 
@@ -167,8 +200,8 @@ class ViewXInterpreter(object):
             # if property link label is defined
             label = None
             for prop in property_link.properties:
-                if prop.__class__.__name__ == 'Label' and prop.view_label is not None:
-                    label = prop.view_label.label
+                if prop.__class__.__name__ == 'Label':
+                    label = prop.label
                     break
             if label: # if property link label is defined
                 if label.__class__.__name__ == 'ClassLabel':
@@ -208,22 +241,25 @@ class ViewXInterpreter(object):
                 graph_element.add_data('parent', parent.__hash__())
 
         # if parent class view is defined
-        if hasattr(view, 'parent_shape') and view.parent_shape is not None:
-            print(view.parent_shape)
+        if hasattr(view, 'container') and view.container:
+            print(view.container)
             # TODO: add something that uniquely defines peg rule, should be class+parent+conditions because of css
             container = self.find_element_with_class('{}-container'.format(view.name.lower()))
             if container is None:
                 # create container element if not exists
                 container = cy.Node()
-                for prop in view.properties:
-                    if prop.__class__.__name__ == 'Label' and prop.parent_label is not None:
-                        label = prop.parent_label.label
-                        if label.__class__.__name__ == 'ClassLabel':
-                            # resolve item name
-                            element_label = self.get_class_property(label.class_properties, item)
-                        else:
-                            element_label = label
-                        container.add_data('label', element_label)
+                for prop1 in view.properties:
+                    if prop1.__class__.__name__ == 'ContainerProperty':
+                        for prop2 in prop1.properties:
+                            if prop2.__class__.__name__ == 'Label':
+                                label = prop2.label
+                                if label.__class__.__name__ == 'ClassLabel':
+                                    # resolve item name
+                                    element_label = self.get_class_property(label.class_properties, item)
+                                else:
+                                    element_label = label
+                                container.add_data('label', element_label)
+                                break
                         break
                 container.add_class('{}-container'.format(view.name.lower()))
                 self.elements.update({container.__hash__(): container})

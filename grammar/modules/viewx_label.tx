@@ -14,7 +14,7 @@ LabelWrap:
 ;
 
 LabelBackground:
-    'background' ':' color=Color (opacity=FLOAT)? (shape=LabelBackgroundShape)?
+    'background' ':' color=Color (opacity=Opacity)? (shape=LabelBackgroundShape)?
 ;
 
 LabelBackgroundShape:

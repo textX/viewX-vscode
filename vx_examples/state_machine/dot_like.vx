@@ -13,23 +13,9 @@ style:
     // compound node shapes
     ,{"selector": "node.event-container"
         , "style": {
-            "shape": "roundrectangle", "width": "label", "background-color": "white", "background-opacity": 0.4,
-            "border-width": 4, "border-style": "solid", "border-color": "black", "border-opacity": 1,
-            "label": "data(label)", "text-background-color": "white", "text-background-opacity": 0.2, "text-background-shape": "rectangle",
+            "width": "label",
             "text-margin-y": 25, "padding": "35px", "text-outline-width": "2", "text-outline-color": "white",
-            "font-size": 21, "font-style": "italic", "font-weight": "bold", "color": "black"
-        }
-    }
-    // edges
-    ,{"selector": "edge.state-transitions-to_state"
-        , "style": {
-            "target-distance-from-node": "5"
-        }
-    }
-    // compound nodes when selected
-    ,{"selector": "node.state:selected, node.event-container:selected"
-        , "style": {
-            "background-color": "red", "background-opacity": 0.1, "border-color": "red", "color": "red"
+            "font-weight": "bold"
         }
     }
     // contained nodes when compound nodes selected
@@ -51,10 +37,11 @@ view State as Roundrectangle
     }
     link
     {
-        // from: implicit if not defined
+        // from: this // implicit if not defined
         to: State.transitions.to_state
         {
             arrow: black 2 triangle filled
+            distance: 5
         }
         label: State.transitions.event.name
         {
@@ -63,6 +50,15 @@ view State as Roundrectangle
     }
     background: white 0.4
     border: black 4 solid
+    selected
+    {
+        background: red 0.1
+        border: red 4
+        label: State.name
+        {
+            font: red 21 italic
+        }
+    }
 }
 
 view Command as Vee child of State
@@ -76,9 +72,8 @@ view Command as Vee child of State
     border: white 0 solid 0
 }
 
-view Event as Vee inside Rectangle where this = StateMachine.resetEvents
+view Event as Vee inside Roundrectangle where this = StateMachine.resetEvents
 {
-    parent_label: 'Reset Events:'
     label: Event.name
     {
         font: 18
@@ -86,4 +81,23 @@ view Event as Vee inside Rectangle where this = StateMachine.resetEvents
     }
     background: black 0
     border: white 0 solid 0
+    container
+    {
+        label: 'Reset Events:'
+        {
+            font: black 21 italic
+            background: white 0.2
+        }
+        background: white 0.4
+        border: black 4 solid
+        selected
+        {
+            label: 'Reset Events:'
+            {
+                font: red 21 italic
+            }
+            background: red 0.1
+            border: red 4
+        }
+    }
 }

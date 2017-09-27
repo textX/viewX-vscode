@@ -3,7 +3,7 @@ BackgroundProperty:
 ;
 
 Background:
-    (color=Color | image=ImgPathRegEx) (opacity=FLOAT)?
+    (color=Color | image=ImgPathRegEx) (opacity=Opacity)?
 ;
 
 Color:
@@ -27,7 +27,12 @@ BorderProperty:
 ;
 
 Border:
-    color=Color width=INT style=BorderStyle (opacity=FLOAT)?
+    color=Color width=INT (style=BorderStyle)? (opacity=Opacity)?
+;
+
+// Need to wrap FLOAT value in Opacity rule because we mant 1 to be default if None is defined, not 0 as default for FLOAT
+Opacity:
+    FLOAT
 ;
 
 BorderStyle:

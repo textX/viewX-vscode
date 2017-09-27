@@ -2,6 +2,7 @@ import json
 import uuid
 from abc import ABCMeta, abstractmethod
 
+
 class Element(object):
     def __init__(self, id):
         self.__metaclass__ = Element
@@ -33,6 +34,7 @@ class Element(object):
     def to_json(self):
         return json.dumps(self, default=serialize_json)
 
+
 class Node(Element):
     def __init__(self, id=None):
         super().__init__(id)
@@ -44,10 +46,23 @@ class Node(Element):
         self.locked = False # when locked a node's position is immutable (default false)
         self.grabbable = True # whether the node can be grabbed and moved by the user
 
+
 class Edge(Element):
     def __init__(self, source_el, target_el, id=None):
         super().__init__(id)
         self.set_edge_data(source_el, target_el)
+
+
+class ViewStyle(object):
+    def __init__(self, selector):
+        # self.selector = element.__class__.__name__.lower()
+        # if element.classes.__len__() > 0:
+        #     self.selector += '.' + element.classes.replace(' ', '.')
+        self.selector = selector
+        self.style = {}
+
+    def to_json(self):
+        return json.dumps(self, default=serialize_json)
 
 
 def serialize_json(obj):
@@ -75,16 +90,5 @@ def deserialize_json(json):
             return obj
     else:
         return json
-
-class ViewStyle(object):
-    def __init__(self, selector):
-        # self.selector = element.__class__.__name__.lower()
-        # if element.classes.__len__() > 0:
-        #     self.selector += '.' + element.classes.replace(' ', '.')
-        self.selector = selector
-        self.style = {}
-
-    def to_json(self):
-        return json.dumps(self, default=serialize_json)
 
 # j1 = json.dumps(n1, default=serialize_json)
