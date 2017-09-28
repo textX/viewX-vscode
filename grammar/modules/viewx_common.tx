@@ -3,7 +3,7 @@ BackgroundProperty:
 ;
 
 Background:
-    (color=Color | image=ImgPathRegEx) (opacity=Opacity)?
+    (color=Color | image=ImgPathRegEx) (opacity=FloatWrapper)?
 ;
 
 Color:
@@ -27,14 +27,47 @@ BorderProperty:
 ;
 
 Border:
-    color=Color width=INT (style=BorderStyle)? (opacity=Opacity)?
-;
-
-// Need to wrap FLOAT value in Opacity rule because we mant 1 to be default if None is defined, not 0 as default for FLOAT
-Opacity:
-    FLOAT
+    color=Color width=INT (style=BorderStyle)? (opacity=FloatWrapper)?
 ;
 
 BorderStyle:
     'solid' | 'dotted' | 'dashed' | 'double'
+;
+
+WidthProperty:
+    'width' ':' width=Width
+;
+
+Width:
+    'label' | INT
+;
+
+HeightProperty:
+    'height' ':' height=Height
+;
+
+Height:
+    'label' | INT
+;
+
+PaddingProperty:
+    'padding' ':' padding=INT (unit=PaddingUnit)? (relative_to=PaddingRelatives)? 
+;
+
+PaddingUnit:
+    'px' | '%'
+;
+
+PaddingRelatives:
+    'width' | 'height' | 'average' | 'min' | 'max'
+;
+
+// We can use None as indicator that it is not defined
+IntWrapper:
+    INT
+;
+
+// Need to wrap FLOAT value in Opacity rule because we want 1 to be default if None is defined, not 0 as default for FLOAT
+FloatWrapper:
+    FLOAT
 ;

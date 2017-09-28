@@ -39,27 +39,19 @@ ClassView:
 ;
 
 Shape:
-    'None' | 'Graph' | 'State' | 'Line' | /\w+/
+    'None' | 'Graph' | 'State' | 'Link' | /\w+/
 ;
 
 ViewProperty:
-    ShapeProperty | Label | EdgeProperty | ContainerProperty | SelectedProperty
+    ShapeProperty | EdgeProperty | ContainerProperty | SelectedProperty | Label 
 ;
 
 ShapeProperty:
-    BackgroundProperty | StrokeProperty | BorderProperty
+    WidthProperty | HeightProperty | BackgroundProperty | StrokeProperty | BorderProperty | PaddingProperty
 ;
 
 Label:
     'label' ':' (pre_label=PreLabel)? (label=STRING | label=ClassLabel) ('{' label_properties+=LabelProperty '}')? (post_label=PostLabel)?
-;
-
-ViewLabel:
-    'label' ':' (pre_label=PreLabel)? (label=STRING | label=ClassLabel) ('{' label_properties+=LabelProperty '}')? (post_label=PostLabel)?
-;
-
-ParentLabel:
-    'parent_label' ':' (pre_label=PreLabel)? (label=STRING | label=ClassLabel) ('{' label_properties+=LabelProperty '}')? (post_label=PostLabel)?
 ;
 
 ClassLabel:

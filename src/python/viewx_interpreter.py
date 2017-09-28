@@ -1,5 +1,8 @@
 """
-Module which serves as a viewX model interpreter.
+Module which interprets textX model based on viewX model and generates preview.html file
+with Cytoscape.js graph model used for visualization of textX model. The preview.html file is hosted on file server
+and can be loaded with multiple clients (regular internet browser or Visual Studio Code extension) and previewed.
+The graph is interactive and it's visualization is based on Cytoscape.js graph engine.
 """
 
 import sys
@@ -10,14 +13,15 @@ import preview_generator
 import cytoscape_helper as cy
 import cytoscape_rule_engine as cre
 
+
 class ViewXInterpreter(object):
     """
     ViewX model interpreter.
     """
-    def __init__(self, viewmodel):
-        self.view_model = viewmodel  # assign view model when initialized
-        self.model = None  # different models can be interpreted with same viewmodel
-        self.elements = {}  # all cytoscape.js graph elements
+    def __init__(self, view_model):
+        self.view_model = view_model  # assign view model when initialized
+        self.model = None  # different models can be interpreted with same view model
+        self.elements = {}  # all Cytoscape.js graph elements
         self.styles = []  # style definitions for elements
         self.overwrite_styles = False  # overwrite styles flag
         self.traversed_types = []  # visited types during recursive search algorithm
@@ -34,7 +38,7 @@ class ViewXInterpreter(object):
         """
         Main interpreting logic.
 
-        :param model: textx model that should be interpreted
+        :param model: textX model that should be interpreted
 
         :return: /
         """
@@ -46,7 +50,8 @@ class ViewXInterpreter(object):
             if view.shape.lower() != 'none':
                 self.match_view_within_type(model, view)
 
-            self.overwrite_styles = view_model.stylesheet.overwrite == 'overwrite'
+            self.overwrite_styles = True if view_model.stylesheet\
+                and view_model.stylesheet.overwrite == 'overwrite' else False
             if not self.overwrite_styles:
                 # generate view styles
                 visitor = cre.ViewStylePropertyVisitor(view)
@@ -91,7 +96,7 @@ class ViewXInterpreter(object):
                 # append ViewStyle for selected state at the end
                 if selected_property:
                     sel_visitor = cre.ViewStylePropertyVisitor(view, False, ':selected')
-                    for sel_prop in prop.properties:
+                    for sel_prop in selected_property.properties:
                         sel_visitor.visit(sel_prop)
                     self.styles.append(sel_visitor.view_style)
 
@@ -101,12 +106,12 @@ class ViewXInterpreter(object):
 
     def match_view_within_type(self, tx_type, view):
         """
-        Utilize children_of_type method from textx module to return all elements that match textx type defined in view
+        Utilize children_of_type method from textX module to return all elements that match textX type defined in view
         starting from root tx_type.
 
         :param tx_type: root tx_type to start searching from
 
-        :param view: defined view for contained textx type that should be found within element of tx_type
+        :param view: defined view for contained textX type that should be found within element of tx_type
 
         :return: /
         """
@@ -125,13 +130,13 @@ class ViewXInterpreter(object):
 
     def build_graph_element(self, item, view):
         """
-        Method for creating Cytoscape.js graph elements defined by specified textx item and view.
+        Method for creating Cytoscape.js graph elements defined by specified textX item and view.
 
-        :param item: instance of textx type from which to create Cytoscape.js graph element
+        :param item: instance of textX type from which to create Cytoscape.js graph element
 
         :param view: view which describes how graph element should be created
 
-        :return: Cytoscape.js graph element uniquely defined by textx instance's hash code
+        :return: Cytoscape.js graph element uniquely defined by textX instance's hash code
         """
         graph_element = None
 
@@ -220,29 +225,12 @@ class ViewXInterpreter(object):
 
         # if parent class view is defined
         if hasattr(view, 'parent_view') and view.parent_view is not None:
-            # if view.conditional_parent is not None:
-            #     self.existing_parents.clear()
-            #     parent = None
-            #     elements = []
-            #     while True:
-            #         parent = self.find_view_parent_tx_type(item, view, self.model)
-            #         if parent is None:
-            #             break
-            #         self.existing_parents.append(parent)
-            #         clone = copy.deepcopy(graph_element)
-            #         clone.add_class(view.name.lower())
-            #         elements.append({clone.__hash__(): clone})
-            #     return elements
-            # else:
-
             parent = self.find_view_parent_tx_type(item, view, self.model)
-            # parent = parent_of_type(view.parent_view.name, item)
             if parent is not None:
                 graph_element.add_data('parent', parent.__hash__())
 
         # if parent class view is defined
         if hasattr(view, 'container') and view.container:
-            print(view.container)
             # TODO: add something that uniquely defines peg rule, should be class+parent+conditions because of css
             container = self.find_element_with_class('{}-container'.format(view.name.lower()))
             if container is None:
@@ -269,7 +257,7 @@ class ViewXInterpreter(object):
         graph_element.add_data('offset', item._tx_position)
         graph_element.add_data('offset_end', item._tx_position_end)
 
-        # add class of view name (textx model type name)
+        # add class of view name (textX model type name)
         graph_element.add_class(view.name.lower())
         return {item.__hash__(): graph_element}
     
@@ -300,9 +288,9 @@ class ViewXInterpreter(object):
 
         :param class_properties: property hierarchy used for resolving
 
-        :param starting_item: textx type instance from which to start resolving
+        :param starting_item: textX type instance from which to start resolving
 
-        :param item_to_find: textx type instance to find
+        :param item_to_find: textX type instance to find
 
         :return: True if item can be found else False
         """
@@ -336,17 +324,17 @@ class ViewXInterpreter(object):
                         return True
         return False
 
-
     def get_all_resolved_properties(self, class_properties, tx_item):
         """
         Resolve class properties of tx_item following the class_properties structure.
 
         :param class_properties: property hierarchy used for resolving
 
-        :param tx_item: textx type instance from which to start resolving
+        :param tx_item: textX type instance from which to start resolving
 
-        :return: all textx type instances that matched defined class property hierarchy
+        :return: all textX type instances that matched defined class property hierarchy
         """
+
         result_property = tx_item
         # if all class properties are used that means we have resolved all properties
         if class_properties.__len__() == 0:
@@ -377,21 +365,18 @@ class ViewXInterpreter(object):
 
         return resolved_properties
 
-
     def find_view_parent_tx_type(self, tx_item, view, tx_root_item):
         """
         Method that finds parent of the passed tx_item, starting from the tx_root_item.
 
-        :param tx_item: textx type instance for which to find parent
+        :param tx_item: textX type instance for which to find parent
 
-        :param view: view which holds defined parent textx type for tx_item
+        :param view: view which holds defined parent textX type for tx_item
 
-        :param tx_root_item: textx type instance from which to start search
+        :param tx_root_item: textX type instance from which to start search
         
-        :return: parent textx type instance of the tx_item
+        :return: parent textX type instance of the tx_item
         """
-        traversed_types = []
-        traversed_types.append(tx_root_item.__class__.__name__)
 
         # find parent
         for key1, value1 in tx_root_item._tx_attrs.items():
@@ -450,11 +435,11 @@ class ViewXInterpreter(object):
 
         :return: Graph element if found else None.
         """
+
         for element in self.elements.values():
             if element.classes.split(' ')[0] == _class:
                 return element
         return None
-
 
     def update_links(self, element, element_links):
         """
@@ -467,6 +452,7 @@ class ViewXInterpreter(object):
 
         :return: / (updates private property of element links)
         """
+
         link_dict = self.links.get(element.__class__.__name__, {})
         link_dict.update({element.__hash__() : element_links})
         self.links[element.__class__.__name__] = link_dict
@@ -478,6 +464,7 @@ class ViewXInterpreter(object):
         :return: / (Updates private property of elements with newly created edges
         for property links of existing graph elements)
         """
+
         new_edges = []
         # outter dictionary iteration
         for key_type, value_link_dict in self.links.items():
@@ -512,6 +499,7 @@ def build_path_from_import(view_model, _import):
 
     :return: absolute file system path of the import
     """
+
     path = os.path.dirname(view_model)
     _import = _import[1:-1] # remove ""
     if _import[0:2] == './':
@@ -524,37 +512,25 @@ def build_path_from_import(view_model, _import):
             path = os.path.join(path, subpath)
     return path
 
+
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print("Usage: python {} <view_model> <model> [<socketPort>]".format(sys.argv[0]))
+        print('Usage: python {} <view_model> <model> [<socketPort>]'.format(sys.argv[0]))
     else:
-        viewx_grammar_folder = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'grammar')
-        view_meta_model = metamodel_from_file(os.path.join(viewx_grammar_folder, 'viewX.tx'))
+        viewX_grammar_folder = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'grammar')
+        # load viewX metamodel from grammar folder and create model
+        view_meta_model = metamodel_from_file(os.path.join(viewX_grammar_folder, 'viewX.tx'))
         view_model = view_meta_model.model_from_file(sys.argv[1])
 
+        # create textX metamodel path based on viewX model import
         metamodel_path = build_path_from_import(sys.argv[1], view_model.tx_import.path)
         model_path = sys.argv[2]
+        # load metamodel and create model
         target_metamodel = metamodel_from_file(metamodel_path)
         target_model = target_metamodel.model_from_file(model_path)
-
-        viewx_interpreter = ViewXInterpreter(view_model)
-        viewx_interpreter.interpret(target_model)
-        
-        print()
-        print('elements:')
-        for elk, elv in viewx_interpreter.elements.items():
-            print(elk)
-            print(elv.to_json())
-
-        print()
-        print('styles:')
-        for style in viewx_interpreter.styles:
-            print(style.to_json())
-
-        print()
-        print('links:')
-        for lk, lv in viewx_interpreter.links.items():
-            print('{} : {}'.format(lk, lv))
+        # create viewX interpreter based on viewX model and interpret target textX model
+        viewX_interpreter = ViewXInterpreter(view_model)
+        viewX_interpreter.interpret(target_model)
 
         socket_port = sys.argv[3] if sys.argv.__len__() > 3 else '3002'
-        preview_generator.generate(view_model, target_model, viewx_interpreter, socket_port)
+        preview_generator.generate(view_model, target_model, viewX_interpreter, socket_port)

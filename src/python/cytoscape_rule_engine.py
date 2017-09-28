@@ -1,6 +1,6 @@
 from cytoscape_helper import ViewStyle
 
-edge_shapes = ('Line')
+edge_shapes = ('Link')
 node_shapes = ('ellipse', 'triangle', 'rectangle', 'roundrectangle', 'cutrectangle', 'bottomroundrectangle', 'barrel',
                'rhomboid', 'diamond', 'pentagon', 'hexagon', 'concavehexagon', 'heptagon', 'octagon', 'star', 'vee')
 node_background = ('background-color', 'background-blacken', 'background-opacity')
@@ -18,6 +18,14 @@ class PropertyVisitor(object):
         visit = self.switch_visit.get(_property.__class__.__name__, self.visit_default)
         visit(_property)
 
+    def visit_width(self, _property):
+        if _property.width:
+            self.view_style.style['width'] = _property.width
+
+    def visit_height(self, _property):
+        if _property.height:
+            self.view_style.style['height'] = _property.height
+
     def visit_background(self, _property):
         if _property.background.color:
             self.view_style.style['background-color'] = _property.background.color
@@ -34,24 +42,43 @@ class PropertyVisitor(object):
         self.view_style.style['border-opacity'] = _property.border.opacity\
             if _property.border.opacity is not None else 1
 
+    def visit_padding(self, _property):
+        self.view_style.style['padding'] = '{}{}'.format(_property.padding,
+                                                         'px' if _property.unit is None else _property.unit)
+        if _property.relative_to:
+            self.view_style.style['padding-relative-to'] = _property.relative_to
+
     def visit_stroke(self, _property):
         self.view_style.style['width'] = _property.width
         self.view_style.style['line-color'] = _property.color
         self.view_style.style['line-style'] = _property.style if _property.style else 'solid'
 
     def visit_label(self, _property):
+        # label value is always evaluated during interpretation because it can depend on model
+        # once evaluated it is assigned to graph element in data section so we just need to reference it here
         self.view_style.style['label'] = 'data(label)'
         for label_property in _property.label_properties:
             if label_property.__class__.__name__ == 'LabelFont':
                 self.view_style.style['color'] = label_property.color if label_property.color else 'black'
                 self.view_style.style['font-size'] = label_property.size
                 self.view_style.style['font-style'] = label_property.style if label_property.style else 'normal'
+                self.view_style.style['font-weight'] = label_property.weight if label_property.weight else 'normal'
             elif label_property.__class__.__name__ == 'LabelBackground':
                 self.view_style.style['text-background-color'] = label_property.color if label_property.color else 'white'
                 self.view_style.style['text-background-opacity'] = label_property.opacity\
                     if label_property.opacity is not None else 1
                 shape = label_property.shape if label_property.shape else ''
                 self.view_style.style['text-background-shape'] = shape + 'rectangle'
+            elif label_property.__class__.__name__ == 'LabelOutline':
+                self.view_style.style['text-outline-color'] = label_property.color if label_property.color else 'white'
+                self.view_style.style['text-outline-width'] = label_property.width\
+                    if label_property.width is not None else 1
+                self.view_style.style['text-outline-opacity'] = label_property.opacity\
+                    if label_property.opacity is not None else 1
+            elif label_property.__class__.__name__ == 'LabelMargin':
+                self.view_style.style['text-margin-x'] = label_property.x_axis
+                self.view_style.style['text-margin-y'] = label_property.x_axis\
+                    if label_property.y_axis is None else label_property.y_axis
 
     def visit_edge_property(self, _property):
         direction = 'source' if _property.__class__.__name__ in edge_starts else 'target'
@@ -75,9 +102,12 @@ class ViewStylePropertyVisitor(PropertyVisitor):
         super().__init__()
         
         self.switch_visit = {
+            'WidthProperty': self.visit_width,
+            'HeightProperty': self.visit_height,
             'BackgroundProperty': self.visit_background,
             'BorderProperty': self.visit_border,
             'StrokeProperty': self.visit_stroke,
+            'PaddingProperty': self.visit_padding,
             'Label': self.visit_label,
             'EdgeStartProperty': self.visit_edge_property,
             'EdgeEndProperty': self.visit_edge_property

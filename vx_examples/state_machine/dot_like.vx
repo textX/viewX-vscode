@@ -2,24 +2,8 @@
 tximport StateMachine from "./../../tx_samples/state_machine/state_machine.tx"
 
 style:
-    // todo
-    {"selector": "node.state"
-        , "style": {
-            "width": "label",
-            "text-margin-y": 25, "padding": "35px", "text-outline-width": "2", "text-outline-color": "white",
-            "font-weight": "bold"
-        }
-    }
-    // compound node shapes
-    ,{"selector": "node.event-container"
-        , "style": {
-            "width": "label",
-            "text-margin-y": 25, "padding": "35px", "text-outline-width": "2", "text-outline-color": "white",
-            "font-weight": "bold"
-        }
-    }
     // contained nodes when compound nodes selected
-    ,{"selector": "node:selected node"
+    {"selector": "node:selected node"
     , "style": {
             "background-color": "red", "border-color": "red", "color": "red"
         }
@@ -32,8 +16,10 @@ view State as Roundrectangle
 {
     label: State.name
     {
-        font: black 21 italic
+        font: black 21 italic bold
         background: white 0.2
+        outline: white 2
+        margin: 0 25
     }
     link
     {
@@ -48,15 +34,17 @@ view State as Roundrectangle
             font: 18
         }
     }
+    width: label
     background: white 0.4
     border: black 4 solid
+    padding: 35
     selected
     {
         background: red 0.1
         border: red 4
         label: State.name
         {
-            font: red 21 italic
+            font: red 21 italic bold
         }
     }
 }
@@ -85,16 +73,20 @@ view Event as Vee inside Roundrectangle where this = StateMachine.resetEvents
     {
         label: 'Reset Events:'
         {
-            font: black 21 italic
+            font: black 21 italic bold
             background: white 0.2
+            outline: white 2
+            margin: 0 25
         }
+        width: label
         background: white 0.4
         border: black 4 solid
+        padding: 35 px
         selected
         {
             label: 'Reset Events:'
             {
-                font: red 21 italic
+                font: red 21 italic bold
             }
             background: red 0.1
             border: red 4
