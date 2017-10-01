@@ -12,10 +12,15 @@ overwrite style:
             "font-size": 21, "font-style": "italic", "font-weight": "bold", "color": "black"
         }
     }
+    ,{"selector": "node.event-container"
+        , "style": {
+                "shape": "rectangle"
+        }
+    }
     // edges
     ,{"selector": "edge.state-transitions-to_state"
         , "style": {
-            "curve-style": "bezier", "arrow-scale": 2, "target-arrow-shape": "triangle", "target-arrow-fill": "filled", "target-arrow-color": "black",
+            "curve-style": "bezier", "width": 4, "arrow-scale": 2, "target-arrow-shape": "triangle", "target-arrow-fill": "filled", "target-arrow-color": "black",
             "target-distance-from-node": "5", "label": "data(label)", "font-size": 18
         }
     }
@@ -63,5 +68,8 @@ view Command as Vee child of State
 view Event as Star inside Rectangle where this = StateMachine.resetEvents
 {
     label: Event.name
-    parent_label: 'Reset Events:'
+    container
+    {
+        label: 'Reset Events:'
+    }
 }

@@ -36,7 +36,15 @@ ClassView:
 ;
 
 Shape:
-    'None' | 'Graph' | 'State' | 'Link' | /\w+/
+    LinkShape | NodeShape
+;
+
+NodeShape:
+    'None' | 'Graph' | 'State'  | /\w+/
+;
+
+LinkShape:
+    'Link' (style=LinkStyleProperty)?
 ;
 
 ViewProperty:
@@ -48,7 +56,7 @@ ShapeProperty:
 ;
 
 Label:
-    'label' ':' (pre_label=PreLabel)? (label=STRING | label=ClassLabel) ('{' label_properties+=LabelProperty '}')? (post_label=PostLabel)?
+    'label' (':' (pre_label=PreLabel)? (label=STRING | label=ClassLabel) (post_label=PostLabel)?)? ('{' label_properties+=LabelProperty '}')?
 ;
 
 ClassLabel:

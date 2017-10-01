@@ -1,21 +1,22 @@
 import json
-import uuid
-from abc import ABCMeta, abstractmethod
 
 
 class Element(object):
-    def __init__(self, id):
+    """
+    Abstract class for Cytoscape.js graph element with common properties for nodes and edges
+    """
+
+    def __init__(self, _id):
         self.__metaclass__ = Element
-        self.group = 'nodes' # 'nodes' for a node, 'edges' for an edge
-        self.data = { # element data (put json serialisable dev data here)
+        self.group = 'nodes'  # 'nodes' for a node, 'edges' for an edge
+        self.data = {  # element data (put json serializable dev data here)
             # define 'source' and 'target' for an edge
-            # 'id' : uuid.uuid1() if id is None else id
-            'id' : self.__hash__() if id is None else id
+            'id': self.__hash__() if _id is None else _id
         }
-        self.scratch = {} # scratchpad data (usually temp or nonserialisable data)
-        self.selected = False # whether the element is selected (default false)
-        self.selectable = True # whether the selection state is mutable (default true)
-        self.classes = '' # a space separated list of class names that the element has
+        self.scratch = {}  # scratchpad data (usually temp or non-serializable data)
+        self.selected = False  # whether the element is selected (default false)
+        self.selectable = True  # whether the selection state is mutable (default true)
+        self.classes = ''  # a space separated list of class names that the element has
 
     def add_class(self, cls):
         if self.classes.__len__() > 0:
@@ -36,24 +37,35 @@ class Element(object):
 
 
 class Node(Element):
-    def __init__(self, id=None):
-        super().__init__(id)
+    """
+    Class which represents Cytoscape.js nodes with node specific properties
+    """
+    def __init__(self, _id=None):
+        super().__init__(_id)
         self.group = 'nodes'
-        self.position = { # the model position of the node (optional on init, mandatory after)
-            'x' : 0,
-            'y' : 0
+        self.position = {  # the model position of the node (optional on init, mandatory after)
+            'x': 0,
+            'y': 0
         }
-        self.locked = False # when locked a node's position is immutable (default false)
-        self.grabbable = True # whether the node can be grabbed and moved by the user
+        self.locked = False  # when locked a node's position is immutable (default false)
+        self.grabbable = True  # whether the node can be grabbed and moved by the user
 
 
 class Edge(Element):
-    def __init__(self, source_el, target_el, id=None):
-        super().__init__(id)
+    """
+    Class which represents Cytoscape.js edges with edge specific properties
+    """
+    def __init__(self, source_el, target_el, _id=None):
+        super().__init__(_id)
         self.set_edge_data(source_el, target_el)
 
 
 class ViewStyle(object):
+    """
+    Class which represents Cytoscape.js style definition.
+
+    Contains css styles and selector for elements for which those styles should be applied.
+    """
     def __init__(self, selector):
         # self.selector = element.__class__.__name__.lower()
         # if element.classes.__len__() > 0:
@@ -66,11 +78,16 @@ class ViewStyle(object):
 
 
 def serialize_json(obj):
+    """
+    A helper method for serializing Cytoscape.js elements in desired json form.
+    :param obj: Object to serialize
+    :return: JSON string representation of obj
+    """
     # handle concrete class serialization
     if hasattr(obj, '__metaclass__') and obj.__metaclass__.__name__ == 'Element':
-        json = {} # { '__classname__' : type(obj).__name__ }
+        json = {}  # { '__classname__' : type(obj).__name__ }
         json.update(vars(obj))
-        json.pop('__metaclass__', None) # remove __metaclass__ from json
+        json.pop('__metaclass__', None)  # remove __metaclass__ from json
     # handle abstract class serialization
     elif obj.__class__.__name__ == 'type' and obj.__name__ == 'Element':
         json = obj.__name__
@@ -81,14 +98,18 @@ def serialize_json(obj):
         json = obj.__str__()
     return json
 
+
 def deserialize_json(json):
-    classname = json.pop('__classname__', None)
-    if classname == 'Element': # type(self).__name__:
+    """
+    A helper method for deserializing json into Cytoscape.js elements.
+    :param json: json representation of Cytoscape.js element
+    :return: Cytoscape.js element object if json is valid, else json
+    """
+    class_name = json.pop('__classname__', None)
+    if class_name == 'Element':  # type(self).__name__:
         obj = Element.__new__(Element)   # Make instance without calling __init__
         for key, value in json.items():
             setattr(obj, key, value)
             return obj
     else:
         return json
-
-# j1 = json.dumps(n1, default=serialize_json)

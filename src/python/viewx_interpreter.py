@@ -47,7 +47,7 @@ class ViewXInterpreter(object):
 
         for view in view_model.views:
             # loop over model tx properties recursively and match them with defined views
-            if view.shape.lower() != 'none':
+            if not (type(view.shape) is str and view.shape.lower() == 'none'):
                 self.match_view_within_type(model, view)
 
             self.overwrite_styles = True if view_model.stylesheet\
@@ -55,8 +55,11 @@ class ViewXInterpreter(object):
             if not self.overwrite_styles:
                 # generate view styles
                 visitor = cre.ViewStylePropertyVisitor(view)
+                self.styles.append(visitor.view_style)
+
                 property_link = None
                 selected_property = None
+                container_property = None
                 for prop in view.properties:
                     # create ViewStyle for selected state
                     if prop.__class__.__name__ == 'SelectedProperty':
@@ -66,21 +69,7 @@ class ViewXInterpreter(object):
                         property_link = prop
                     # create styles for container shape
                     elif prop.__class__.__name__ == 'ContainerProperty':
-                        cont_sel_property = None
-                        container_visitor = cre.ViewStylePropertyVisitor(view, True, prop)
-                        for cont_prop in prop.properties:
-                            # create ViewStyle for container in selected state
-                            if cont_prop.__class__.__name__ == 'SelectedProperty':
-                                cont_sel_property = cont_prop
-                                break
-                        self.styles.append(container_visitor.view_style)
-
-                        # append ViewStyle for container in selected state at the end
-                        if cont_sel_property:
-                            cont_sel_visitor = cre.ViewStylePropertyVisitor(view, True, cont_sel_property, ':selected')
-                            self.styles.append(cont_sel_visitor.view_style)
-
-                self.styles.append(visitor.view_style)
+                        container_property = prop
 
                 # if it has, create style for property links
                 if property_link:
@@ -97,6 +86,21 @@ class ViewXInterpreter(object):
                 if selected_property:
                     sel_visitor = cre.ViewStylePropertyVisitor(view, False, selected_property, ':selected')
                     self.styles.append(sel_visitor.view_style)
+
+                # create style for container if it is defined
+                if container_property:
+                    cont_sel_property = None
+                    container_visitor = cre.ViewStylePropertyVisitor(view, True, prop)
+                    for cont_prop in prop.properties:
+                        # create ViewStyle for container in selected state
+                        if cont_prop.__class__.__name__ == 'SelectedProperty':
+                            cont_sel_property = cont_prop
+                            break
+                    self.styles.append(container_visitor.view_style)
+                    # append ViewStyle for container in selected state at the end
+                    if cont_sel_property:
+                        cont_sel_visitor = cre.ViewStylePropertyVisitor(view, True, cont_sel_property, ':selected')
+                        self.styles.append(cont_sel_visitor.view_style)
 
         # create property links if any
         if self.links.__len__() > 0:
@@ -138,34 +142,8 @@ class ViewXInterpreter(object):
         """
         graph_element = None
 
-        # check item referencing properties (label, is_edge(connection points), parent...)
-        label_property = None
-        for prop in view.properties:
-            if prop.__class__.__name__ == 'Label':
-                label_property = prop.label
-                break
-        is_edge = view.shape in cre.edge_shapes
-
-        # if not defined, set default label with element index
-        if label_property is None:
-            element_label = 'Element_{0}'.format(self.elements.__len__())
-        else:
-            if label_property.__class__.__name__ == 'ClassLabel':
-                # resolve item name
-                element_label = self.get_class_property(label_property.class_properties, item)
-            else:
-                element_label = label_property
-
-            # prepend/append pre_label/post_label if defined
-            pre_label = self.get_class_property(['parent', 'pre_label', 'label'], label_property)
-            if type(pre_label) is str:
-                element_label = pre_label + element_label
-            post_label = self.get_class_property(['parent', 'post_label', 'label'], label_property)
-            if type(post_label) is str:
-                element_label = element_label + post_label
-
         # if element is edge
-        if is_edge:
+        if view.shape.__class__.__name__ == 'LinkShape':
             start_element = None
             end_element = None
             for prop in view.properties:
@@ -180,6 +158,14 @@ class ViewXInterpreter(object):
                     graph_element = cy.Edge(start_element, end_element, item.__hash__())
         else: # element is node
             graph_element = cy.Node(item.__hash__())
+
+        # check item referencing properties (label, is_edge(connection points), parent...)
+        element_label = self.resolve_element_label(item, view.properties)
+        # if not defined, set default label with element index
+        if element_label is None:
+            element_label = 'Element_{0}'.format(self.elements.__len__())
+
+        graph_element.add_data('label', element_label)
 
         # check if property link is defined (need to store links and create them later)
         property_link = None
@@ -204,7 +190,9 @@ class ViewXInterpreter(object):
             for prop in property_link.properties:
                 if prop.__class__.__name__ == 'Label':
                     if prop.label.__class__.__name__ == 'ClassLabel':
+                        # the result are labels for all links which are resolve by class properties
                         link_labels = self.get_all_resolved_properties(prop.label.class_properties, item)
+                        # if label is properly built and based on link, the count should be the same
                         for value_props, link_label in zip(transformed_links.values(), link_labels):
                             value_props.append(('label', link_label))
                     else:
@@ -213,9 +201,7 @@ class ViewXInterpreter(object):
                             value_props.append(('label', prop.label))
                     break
 
-            self.update_links(item, transformed_links)         
-
-        graph_element.add_data('label', element_label)
+            self.update_links(item, transformed_links)
 
         # if parent class view is defined
         if hasattr(view, 'parent_view') and view.parent_view is not None:
@@ -232,16 +218,9 @@ class ViewXInterpreter(object):
                 container = cy.Node()
                 for prop1 in view.properties:
                     if prop1.__class__.__name__ == 'ContainerProperty':
-                        for prop2 in prop1.properties:
-                            if prop2.__class__.__name__ == 'Label':
-                                label = prop2.label
-                                if label.__class__.__name__ == 'ClassLabel':
-                                    # resolve item name
-                                    element_label = self.get_class_property(label.class_properties, item)
-                                else:
-                                    element_label = label
-                                container.add_data('label', element_label)
-                                break
+                        element_label = self.resolve_element_label(item, prop1.properties)
+                        if element_label:
+                            container.add_data('label', element_label)
                         break
                 container.add_class('{}-container'.format(view.name.lower()))
                 self.elements.update({container.__hash__(): container})
@@ -254,7 +233,26 @@ class ViewXInterpreter(object):
         # add class of view name (textX model type name)
         graph_element.add_class(view.name.lower())
         return {item.__hash__(): graph_element}
-    
+
+    def resolve_element_label(self, element, properties):
+        element_label = None
+        for prop in properties:
+            if prop.__class__.__name__ == 'Label':
+                label_property = prop.label
+                if label_property.__class__.__name__ == 'ClassLabel':
+                    # resolve item name
+                    element_label = self.get_class_property(label_property.class_properties, element)
+                else:
+                    element_label = label_property
+                # prepend/append pre_label/post_label if defined
+                pre_label = self.get_class_property(['parent', 'pre_label', 'label'], label_property)
+                if type(pre_label) is str:
+                    element_label = pre_label + element_label
+                post_label = self.get_class_property(['parent', 'post_label', 'label'], label_property)
+                if type(post_label) is str:
+                    element_label = element_label + post_label
+                break
+        return element_label
 
     def get_class_property(self, class_properties, starting_item):
         """
@@ -380,7 +378,7 @@ class ViewXInterpreter(object):
                 # parent is list of items
                 if items1.__class__.__name__ == 'list':
                     first1 = items1[0] if items1.__len__() > 0 else None
-                    if first1 and view.parent_view is not None:
+                    if first1 and view.parent_view:
                         # if any of found items is type of parent type defined in view
                         if first1.__class__.__name__ == view.parent_view.name:
                             for item1 in items1:
@@ -401,7 +399,7 @@ class ViewXInterpreter(object):
                                             return item1
                 # parent is single item
                 else:
-                    if items1 and view.parent_view is not None:
+                    if items1 and view.parent_view:
                         if items1.__class__.__name__ == view.parent_view.name:
                             for item1 in items1:
                                 # find child
@@ -527,4 +525,4 @@ if __name__ == '__main__':
         viewX_interpreter.interpret(target_model)
 
         socket_port = sys.argv[3] if sys.argv.__len__() > 3 else '3002'
-        preview_generator.generate(view_model, target_model, viewX_interpreter, socket_port)
+        preview_generator.generate(viewX_interpreter, socket_port)

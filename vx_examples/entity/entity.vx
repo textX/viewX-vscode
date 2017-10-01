@@ -1,27 +1,5 @@
 tximport EntityModel from "./../../tx_samples/entity/entity.tx"
 
-view Type as Diamond
-{
-    background: green
-    label: Type.name
-    {
-        font: 15
-        background: red 0.5
-    }
-    border: green 3 solid
-}
-
-view SimpleType as Vee
-{
-    background: orange
-    label: SimpleType.name
-    {
-        font: 15
-        background: white 0.5
-    }
-    border: black 3 dotted
-}
-
 view Entity as Roundrectangle
 {
     background: blue
@@ -33,18 +11,40 @@ view Entity as Roundrectangle
     }
 }
 
-view Property as Line
+view Type as Diamond
 {
-    stroke: orange 3 dotted
+    background: green
+    label: Type.name
+    {
+        font: 15
+        background: red 0.5
+    }
+    border: green 3 solid
+}
+
+view SimpleType as Pentagon
+{
+    background: orange
+    label: SimpleType.name
+    {
+        font: 15
+        background: white 0.5
+    }
+    border: black 3 dotted
+}
+
+view Property as Link
+{
+    line: orange 3 dotted
     label: Property.name
     {
         font: purple 11 oblique
     }
-    start: Property.parent
+    from: Property.parent
     {
-        arrow: yellow 5 diamond filled
+        arrow: purple 2 diamond filled
     }
-    end: Property.type
+    to: Property.type
     {
         arrow: red 2 triangle hollow
     }

@@ -6,7 +6,13 @@ TEMPLATE_NAME = 'preview.template'
 TEMPLATE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates'))
 OUTPUT_PATH = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname((__file__)))), 'graph_preview'))
 
-def generate(view_model, model, viewx_interpreter, socket_port):
+def generate(viewX_interpreter, socket_port):
+    """
+    Method that generates preview.html file with Cytoscape.js graph representation of interpreted textX model.
+    :param viewX_interpreter: viewX interpreter which has all information necessary for preview.html file generation
+    :param socket_port: A port used for socket.io server communication
+    :return: /
+    """
 
     # Initialize template engine.
     jinja_env = jinja2.Environment(
@@ -20,12 +26,12 @@ def generate(view_model, model, viewx_interpreter, socket_port):
 
     # render the template
     rendered = template.render({'date': date,
-                                'view_model': view_model,
-                                'model': model,
+                                'view_model': viewX_interpreter.view_model,
+                                'model': viewX_interpreter.model,
                                 'socket_port': socket_port,
-                                'elements': viewx_interpreter.elements.values(),
-                                'styles': viewx_interpreter.styles,
-                                'overwrite_styles': viewx_interpreter.overwrite_styles})
+                                'elements': viewX_interpreter.elements.values(),
+                                'styles': viewX_interpreter.styles,
+                                'overwrite_styles': viewX_interpreter.overwrite_styles})
 
     # Write rendered content to the file
     with open(os.path.join(OUTPUT_PATH, 'preview.html'), 'w') as preview_file:

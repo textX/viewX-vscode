@@ -1,6 +1,5 @@
 from cytoscape_helper import ViewStyle
 
-edge_shapes = ('Link')
 node_shapes = ('ellipse', 'triangle', 'rectangle', 'roundrectangle', 'cutrectangle', 'bottomroundrectangle', 'barrel',
                'rhomboid', 'diamond', 'pentagon', 'hexagon', 'concavehexagon', 'heptagon', 'octagon', 'star', 'vee')
 node_background = ('background-color', 'background-blacken', 'background-opacity')
@@ -10,6 +9,12 @@ edge_start_rules = ['EdgeStartProperty', 'LinkFromProperty']
 
 
 class PropertyVisitor(object):
+    """
+    Abstract visitor class with a visit method for each Cytoscape.js
+    element's style property which is supported by viewX grammar.
+
+    Each visit method resolves property based on grammar and forms css style definition for it.
+    """
     def __init__(self):
         self.view_style = None
         self.switch_visit = {}
@@ -96,9 +101,9 @@ class PropertyVisitor(object):
                     if arrow_property.distance else 0
 
     def visit_link_style_property(self, _property):
-        if _property.__class__.__name__ == 'LinkStyleCurved':
+        if _property.__class__.__name__ == 'LinkStyleCurved' or _property is None:
             self.view_style.style['curve-style'] = 'bezier'
-            if _property.step:
+            if _property and _property.step:
                 self.view_style.style['control-point-step-size'] = _property.step
         elif _property.__class__.__name__ == 'LinkStyleCurvedControlPoints':
             self.view_style.style['curve-style'] = 'unbundled-bezier'
@@ -120,11 +125,20 @@ class PropertyVisitor(object):
 
 
 def create_cp_weights(distances):
+    """
+    Create evenly distributed control points based on passed distance values.
+    :param distances: distances of control points on line perpendicular to the link curve
+    :return: control point weights (distance of control points from source element
+    on imaginary line between source and target element)
+    """
     length = distances.__len__()
     return [w / (length + 1) for w in range(1, length + 1)]
 
 
 class ViewStylePropertyVisitor(PropertyVisitor):
+    """
+    Concrete visitor class for viewX 'View' grammar rule.
+    """
     def __init__(self, view, container=False, nested_properties=None, selector_postfix=''):
         super().__init__()
         
@@ -141,8 +155,9 @@ class ViewStylePropertyVisitor(PropertyVisitor):
             'LinkStyleProperty': self.visit_link_style_property
         }
 
-        if view.shape in edge_shapes:
+        if view.shape.__class__.__name__ == 'LinkShape':
             self.view_style = ViewStyle('edge.{}{}'.format(view.name.lower(), selector_postfix))
+            self.visit(view.shape.style, 'LinkStyleProperty')
         elif view.shape.lower() in node_shapes:
             self.view_style = ViewStyle('node.{}{}{}'.format(
                 view.name.lower(), '-container' if container else '', selector_postfix))
@@ -162,6 +177,9 @@ class ViewStylePropertyVisitor(PropertyVisitor):
 
 
 class LinkStylePropertyVisitor(PropertyVisitor):
+    """
+    Concrete visitor class for viewX 'PropertyLink' grammar rule.
+    """
     def __init__(self, view, property_link, nested_properties=None, selector_postfix=''):
         super().__init__()
         

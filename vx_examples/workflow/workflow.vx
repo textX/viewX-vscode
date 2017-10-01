@@ -1,7 +1,7 @@
 tximport Workflow from "./../../tx_samples/workflow/workflow.tx"
 
-<style>
-[{
+style:
+{
     "selector": "node.task",
     "style": {
         "shape": "rectangle",
@@ -34,8 +34,8 @@ tximport Workflow from "./../../tx_samples/workflow/workflow.tx"
         "line-style": "dotted",
         "label": "data(label)"
     }
-}]
-</style>
+}
+:style end
 
 view Task as Rectangle
 {
@@ -50,13 +50,13 @@ view Task as Rectangle
     {
         from: this
         {
-            arrow: blue 5 diamond filled
+            arrow: blue 3 diamond filled
         }
         to: Task.next
         {
             arrow: red 2 triangle hollow
         }
-        stroke: green 3 dashed
+        line: green 3 dashed
         label: Task.next.name
     }
 }

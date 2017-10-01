@@ -2,12 +2,6 @@ tximport StateMachine from "./../../tx_samples/state_machine/state_machine.tx"
 
 apply to "*.sm;state*.*"
 
-view StateMachine as Graph
-{
-    background: white
-    border: black 4 solid
-}
-
 view State as Rectangle
 {
     background: blue
@@ -48,9 +42,9 @@ view Command as Star inside State
     border: red 2 solid
 }
 
-view Transition as Line
+view Transition as Link
 {
-    stroke: green 3 dashed
+    line: green 3 dashed
     label: Transition.event.name
     {
         font: blue 18 oblique
