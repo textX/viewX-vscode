@@ -1,5 +1,6 @@
-import modules.viewx_label
 import modules.viewx_common
+import modules.viewx_label
+import modules.viewx_link
 
 ViewXModel:
     tx_import=Import
@@ -25,10 +26,6 @@ Stylesheet:
     (overwrite='overwrite')? 'style' ':' style=StyleProperty ':' 'style' 'end'
 ;
 
-OverwriteStyle:
-    overwrite='overwrite'
-;
-
 StyleProperty[noskipws]:
     /(.|\n)*?(?=:\s*style\s*end)/
 ;
@@ -47,7 +44,7 @@ ViewProperty:
 ;
 
 ShapeProperty:
-    WidthProperty | HeightProperty | BackgroundProperty | StrokeProperty | BorderProperty | PaddingProperty
+    WidthProperty | HeightProperty | BackgroundProperty | LineProperty | BorderProperty | PaddingProperty
 ;
 
 Label:
@@ -58,12 +55,12 @@ ClassLabel:
     class_view=[ClassView] ('.' class_properties+=ID['.'])?
 ;
 
-PreLabel:
-    label=STRING '+'
+ContainerProperty:
+    'container' '{' properties+=ViewProperty '}'
 ;
 
-PostLabel:
-    '+' label=STRING
+SelectedProperty:
+    'selected' ('as' shape=Shape)? '{' properties+=ViewProperty '}'
 ;
 
 // edge related rules
@@ -83,15 +80,11 @@ EdgeEndProperty:
 ;
 
 PropertyLink:
-    'link' '{' 
+    'link' ('as' style=LinkStyleProperty)? '{' 
         (link_from=LinkFromProperty)?
         link_to=LinkToProperty?
         properties*=LinkProperties
     '}'
-;
-
-LinkProperties:
-    StrokeProperty | Label
 ;
 
 LinkFromProperty:
@@ -104,32 +97,16 @@ LinkToProperty:
     ('{' arrow_properties+=ArrowProperty '}')?
 ;
 
-ArrowProperty:
-    ArrowShapeProperty | EndpointDistance
+LinkProperties:
+    LineProperty | Label | LinkSelectedProperty
 ;
 
-EndpointDistance:
-    'distance' ':' distance=INT
+LinkSelectedProperty:
+    'selected' ('as' style=LinkStyleProperty)? '{' properties+=NestedLinkProperties '}'
 ;
 
-ArrowShapeProperty:
-    'arrow' ':' (color=Color)? scale=INT (shape=ArrowShape)? (fill=ArrowFill)?
-;
-
-ArrowShape:
-    'tee' | 'triangle' | 'triangle-tee' | 'triangle-cross' | 'triangle-backcurve' | 'square' | 'circle' | 'diamond' | 'none'
-;
-
-ArrowFill:
-    'filled' | 'hollow'
-;
-
-ContainerProperty:
-    'container' '{' properties+=ViewProperty '}'
-;
-
-SelectedProperty:
-    'selected' '{' properties+=ViewProperty '}'
+NestedLinkProperties:
+    LineProperty | Label | LinkFromProperty | LinkToProperty
 ;
 
 Comment:

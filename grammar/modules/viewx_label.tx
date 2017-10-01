@@ -1,5 +1,13 @@
 import viewx_common
 
+PreLabel:
+    label=STRING '+'
+;
+
+PostLabel:
+    '+' label=STRING
+;
+
 LabelProperty:
     LabelFont | LabelBackground | LabelOutline | LabelMargin
 ;

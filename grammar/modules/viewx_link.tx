@@ -1,0 +1,46 @@
+import viewx_common
+
+LinkStyleProperty:
+    LinkStyleCurvedControlPoints | LinkStyleStraightControlPoints | LinkStyleCurved | LinkStyleStraight | LinkStyleHaystack
+;
+
+// default curve if needed
+LinkStyleCurved:
+    'curved' (step=INT)?
+;
+
+LinkStyleCurvedControlPoints:
+    'curved' '[' control_points+=INT[','] ']'
+;
+
+LinkStyleStraight:
+    'straight'
+;
+
+LinkStyleStraightControlPoints:
+    'straight' '[' control_points+=INT[','] ']'
+;
+
+LinkStyleHaystack:
+    'haystack'
+;
+
+ArrowProperty:
+    ArrowShapeProperty | EndpointDistance
+;
+
+EndpointDistance:
+    'distance' ':' distance=INT
+;
+
+ArrowShapeProperty:
+    'arrow' ':' (color=Color)? scale=INT (shape=ArrowShape)? (fill=ArrowFill)?
+;
+
+ArrowShape:
+    'tee' | 'triangle' | 'triangle-tee' | 'triangle-cross' | 'triangle-backcurve' | 'square' | 'circle' | 'diamond' | 'none'
+;
+
+ArrowFill:
+    'filled' | 'hollow'
+;

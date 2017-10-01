@@ -14,11 +14,11 @@ ImgPathRegEx:
     /"\.?(\w|\.\.|\/|[-])+((\.png)|(\.jpg))?"/
 ;
 
-StrokeProperty:
-    'stroke' ':' color=Color width=INT style=StrokeStyle
+LineProperty:
+    'line' ':' color=Color width=INT (style=LineStyle)?
 ;
 
-StrokeStyle:
+LineStyle:
     'solid' | 'dotted' | 'dashed'
 ;
 

@@ -58,32 +58,26 @@ class ViewXInterpreter(object):
                 property_link = None
                 selected_property = None
                 for prop in view.properties:
-
                     # create ViewStyle for selected state
                     if prop.__class__.__name__ == 'SelectedProperty':
                         selected_property = prop
-                    visitor.visit(prop)
-
                     # check if view has link to it's properties
-                    if prop.__class__.__name__ == 'PropertyLink':
+                    elif prop.__class__.__name__ == 'PropertyLink':
                         property_link = prop
-
                     # create styles for container shape
-                    if prop.__class__.__name__ == 'ContainerProperty':
+                    elif prop.__class__.__name__ == 'ContainerProperty':
                         cont_sel_property = None
-                        container_visitor = cre.ViewStylePropertyVisitor(view, True)
+                        container_visitor = cre.ViewStylePropertyVisitor(view, True, prop)
                         for cont_prop in prop.properties:
                             # create ViewStyle for container in selected state
                             if cont_prop.__class__.__name__ == 'SelectedProperty':
                                 cont_sel_property = cont_prop
-                            container_visitor.visit(cont_prop)
+                                break
                         self.styles.append(container_visitor.view_style)
 
                         # append ViewStyle for container in selected state at the end
                         if cont_sel_property:
-                            cont_sel_visitor = cre.ViewStylePropertyVisitor(view, True, ':selected')
-                            for sel_prop in cont_sel_property.properties:
-                                cont_sel_visitor.visit(sel_prop)
+                            cont_sel_visitor = cre.ViewStylePropertyVisitor(view, True, cont_sel_property, ':selected')
                             self.styles.append(cont_sel_visitor.view_style)
 
                 self.styles.append(visitor.view_style)
@@ -92,12 +86,16 @@ class ViewXInterpreter(object):
                 if property_link:
                     link_visitor = cre.LinkStylePropertyVisitor(view, property_link)
                     self.styles.append(link_visitor.view_style)
+                    # create ViewStyle for link in selected state
+                    for link_prop in property_link.properties:
+                        if link_prop.__class__.__name__ == 'LinkSelectedProperty':
+                            sel_link_visitor = cre.LinkStylePropertyVisitor(view, property_link, link_prop, ':selected')
+                            self.styles.append(sel_link_visitor.view_style)
+                            break
 
                 # append ViewStyle for selected state at the end
                 if selected_property:
-                    sel_visitor = cre.ViewStylePropertyVisitor(view, False, ':selected')
-                    for sel_prop in selected_property.properties:
-                        sel_visitor.visit(sel_prop)
+                    sel_visitor = cre.ViewStylePropertyVisitor(view, False, selected_property, ':selected')
                     self.styles.append(sel_visitor.view_style)
 
         # create property links if any
@@ -203,21 +201,17 @@ class ViewXInterpreter(object):
                                     '-'.join(property_link.link_to.class_properties))))
 
             # if property link label is defined
-            label = None
             for prop in property_link.properties:
                 if prop.__class__.__name__ == 'Label':
-                    label = prop.label
+                    if prop.label.__class__.__name__ == 'ClassLabel':
+                        link_labels = self.get_all_resolved_properties(prop.label.class_properties, item)
+                        for value_props, link_label in zip(transformed_links.values(), link_labels):
+                            value_props.append(('label', link_label))
+                    else:
+                        # update label as string
+                        for value_props in transformed_links.values():
+                            value_props.append(('label', prop.label))
                     break
-            if label: # if property link label is defined
-                if label.__class__.__name__ == 'ClassLabel':
-                    link_labels = self.get_all_resolved_properties(label.class_properties, item)
-                    for value_props, link_label in zip(transformed_links.values(), link_labels):
-                        value_props.append(('label', link_label))
-                else:
-                    # update label as string
-                    link_label = label
-                    for value_props in transformed_links.values():
-                        value_props.append(('label', link_label))
 
             self.update_links(item, transformed_links)         
 
@@ -454,7 +448,7 @@ class ViewXInterpreter(object):
         """
 
         link_dict = self.links.get(element.__class__.__name__, {})
-        link_dict.update({element.__hash__() : element_links})
+        link_dict.update({element.__hash__(): element_links})
         self.links[element.__class__.__name__] = link_dict
 
     def create_links(self):

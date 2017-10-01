@@ -6,7 +6,7 @@ node_shapes = ('ellipse', 'triangle', 'rectangle', 'roundrectangle', 'cutrectang
 node_background = ('background-color', 'background-blacken', 'background-opacity')
 node_border = ('border-width', 'border-style', 'border-color', 'border-opacity')
 node_border_style = ('solid', 'dotted', 'dashed', 'double')
-edge_starts = ['EdgeStartProperty', 'LinkFromProperty']
+edge_start_rules = ['EdgeStartProperty', 'LinkFromProperty']
 
 
 class PropertyVisitor(object):
@@ -14,8 +14,8 @@ class PropertyVisitor(object):
         self.view_style = None
         self.switch_visit = {}
 
-    def visit(self, _property):
-        visit = self.switch_visit.get(_property.__class__.__name__, self.visit_default)
+    def visit(self, _property, key=None):
+        visit = self.switch_visit.get(key if key else _property.__class__.__name__, self.visit_default)
         visit(_property)
 
     def visit_width(self, _property):
@@ -48,9 +48,9 @@ class PropertyVisitor(object):
         if _property.relative_to:
             self.view_style.style['padding-relative-to'] = _property.relative_to
 
-    def visit_stroke(self, _property):
-        self.view_style.style['width'] = _property.width
+    def visit_line(self, _property):
         self.view_style.style['line-color'] = _property.color
+        self.view_style.style['width'] = _property.width
         self.view_style.style['line-style'] = _property.style if _property.style else 'solid'
 
     def visit_label(self, _property):
@@ -81,24 +81,51 @@ class PropertyVisitor(object):
                     if label_property.y_axis is None else label_property.y_axis
 
     def visit_edge_property(self, _property):
-        direction = 'source' if _property.__class__.__name__ in edge_starts else 'target'
+        direction = 'source' if _property.__class__.__name__ in edge_start_rules else 'target'
         for arrow_property in _property.arrow_properties:
-            self.view_style.style['curve-style'] = 'bezier' # needed to enable arrow shapes
             if arrow_property.__class__.__name__ == 'ArrowShapeProperty':
-                self.view_style.style['{}-arrow-color'.format(direction)] = arrow_property.color if arrow_property.color else 'black'
+                self.view_style.style['{}-arrow-color'.format(direction)] = arrow_property.color\
+                    if arrow_property.color else 'black'
                 self.view_style.style['arrow-scale'] = arrow_property.scale
-                self.view_style.style['{}-arrow-shape'.format(direction)] = arrow_property.shape if arrow_property.shape else 'none'
-                self.view_style.style['{}-arrow-fill'.format(direction)] = arrow_property.fill if arrow_property.fill else 'filled'
+                self.view_style.style['{}-arrow-shape'.format(direction)] = arrow_property.shape\
+                    if arrow_property.shape else 'none'
+                self.view_style.style['{}-arrow-fill'.format(direction)] = arrow_property.fill\
+                    if arrow_property.fill else 'filled'
             elif arrow_property.__class__.__name__ == 'EndpointDistance':
                 self.view_style.style['{}-distance-from-node'.format(direction)] = arrow_property.distance\
                     if arrow_property.distance else 0
+
+    def visit_link_style_property(self, _property):
+        if _property.__class__.__name__ == 'LinkStyleCurved':
+            self.view_style.style['curve-style'] = 'bezier'
+            if _property.step:
+                self.view_style.style['control-point-step-size'] = _property.step
+        elif _property.__class__.__name__ == 'LinkStyleCurvedControlPoints':
+            self.view_style.style['curve-style'] = 'unbundled-bezier'
+            self.view_style.style['control-point-distances'] = _property.control_points
+            self.view_style.style['control-point-weights'] = create_cp_weights(_property.control_points)
+        elif _property == 'straight':
+            self.view_style.style['curve-style'] = 'segments'
+            self.view_style.style['segment-distances'] = [0]
+            self.view_style.style['segment-weights'] = [0.5]
+        elif _property.__class__.__name__ == 'LinkStyleStraightControlPoints':
+            self.view_style.style['curve-style'] = 'segments'
+            self.view_style.style['segment-distances'] = _property.control_points
+            self.view_style.style['segment-weights'] = create_cp_weights(_property.control_points)
+        elif _property == 'haystack':
+            self.view_style.style['curve-style'] = 'haystack'
 
     def visit_default(self, _property):
         pass
 
 
+def create_cp_weights(distances):
+    length = distances.__len__()
+    return [w / (length + 1) for w in range(1, length + 1)]
+
+
 class ViewStylePropertyVisitor(PropertyVisitor):
-    def __init__(self, view, container=False, selector_postfix=''):
+    def __init__(self, view, container=False, nested_properties=None, selector_postfix=''):
         super().__init__()
         
         self.switch_visit = {
@@ -106,11 +133,12 @@ class ViewStylePropertyVisitor(PropertyVisitor):
             'HeightProperty': self.visit_height,
             'BackgroundProperty': self.visit_background,
             'BorderProperty': self.visit_border,
-            'StrokeProperty': self.visit_stroke,
+            'LineProperty': self.visit_line,
             'PaddingProperty': self.visit_padding,
             'Label': self.visit_label,
             'EdgeStartProperty': self.visit_edge_property,
-            'EdgeEndProperty': self.visit_edge_property
+            'EdgeEndProperty': self.visit_edge_property,
+            'LinkStyleProperty': self.visit_link_style_property
         }
 
         if view.shape in edge_shapes:
@@ -119,28 +147,46 @@ class ViewStylePropertyVisitor(PropertyVisitor):
             self.view_style = ViewStyle('node.{}{}{}'.format(
                 view.name.lower(), '-container' if container else '', selector_postfix))
             if container:
-                self.view_style.style['shape'] = view.container.lower()
+                self.view_style.style['shape'] = view.container.lower() if container else view.shape.lower()
+            elif hasattr(nested_properties, 'shape') and nested_properties.shape:
+                self.view_style.style['shape'] = nested_properties.shape.lower()
             else:
                 self.view_style.style['shape'] = view.shape.lower()
+
         else:
             self.view_style = ViewStyle('root')
 
+        property_holder = nested_properties if nested_properties else view
+        for prop in property_holder.properties:
+            self.visit(prop)
+
 
 class LinkStylePropertyVisitor(PropertyVisitor):
-    def __init__(self, view, property_link, selector_postfix=''):
+    def __init__(self, view, property_link, nested_properties=None, selector_postfix=''):
         super().__init__()
         
         self.switch_visit = {
             'LinkFromProperty': self.visit_edge_property,
             'LinkToProperty': self.visit_edge_property,
-            'StrokeProperty': self.visit_stroke,
-            'Label': self.visit_label
+            'LineProperty': self.visit_line,
+            'Label': self.visit_label,
+            'LinkStyleProperty': self.visit_link_style_property
         }
 
         # form edge class as structured path (this uniquely identifies groups of property edges)
         self.view_style = ViewStyle('edge.{}-{}{}'.format(view.name.lower(),
                                     '-'.join(property_link.link_to.class_properties), selector_postfix))
-        self.visit(property_link.link_from)
-        self.visit(property_link.link_to)
-        for prop in property_link.properties:
+
+        property_holder = property_link if nested_properties is None else nested_properties
+
+        if hasattr(property_holder, 'style') and property_holder.style:
+            self.visit(property_holder.style, 'LinkStyleProperty')
+        else:
+            self.view_style.style['curve-style'] = 'bezier'  # default link style, needed to enable arrow shapes
+
+        if hasattr(property_holder, 'link_from'):
+            self.visit(property_holder.link_from)
+        if hasattr(property_holder, 'link_to'):
+            self.visit(property_holder.link_to)
+        for prop in property_holder.properties:
             self.visit(prop)
