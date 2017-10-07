@@ -9,6 +9,7 @@ import sys
 import os
 from textx.metamodel import metamodel_from_file
 from textx.model import children_of_type
+from textx.exceptions import *
 import preview_generator
 import cytoscape_helper as cy
 import cytoscape_rule_engine as cre
@@ -509,20 +510,33 @@ if __name__ == '__main__':
     if len(sys.argv) < 3:
         print('Usage: python {} <view_model> <model> [<socketPort>]'.format(sys.argv[0]))
     else:
-        viewX_grammar_folder = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'grammar')
-        # load viewX metamodel from grammar folder and create model
-        view_meta_model = metamodel_from_file(os.path.join(viewX_grammar_folder, 'viewX.tx'))
-        view_model = view_meta_model.model_from_file(sys.argv[1])
+        try:
+            viewX_grammar_folder = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'grammar')
 
-        # create textX metamodel path based on viewX model import
-        metamodel_path = build_path_from_import(sys.argv[1], view_model.tx_import.path)
-        model_path = sys.argv[2]
-        # load metamodel and create model
-        target_metamodel = metamodel_from_file(metamodel_path)
-        target_model = target_metamodel.model_from_file(model_path)
-        # create viewX interpreter based on viewX model and interpret target textX model
-        viewX_interpreter = ViewXInterpreter(view_model)
-        viewX_interpreter.interpret(target_model)
+            # load viewX metamodel from grammar folder and create model
+            view_meta_model = metamodel_from_file(os.path.join(viewX_grammar_folder, 'viewX.tx'))
+            view_model = view_meta_model.model_from_file(sys.argv[1])
 
-        socket_port = sys.argv[3] if sys.argv.__len__() > 3 else '3002'
-        preview_generator.generate(viewX_interpreter, socket_port)
+            # create textX metamodel path based on viewX model import
+            metamodel_path = build_path_from_import(sys.argv[1], view_model.tx_import.path)
+            model_path = sys.argv[2]
+
+            # load metamodel and create model
+            target_metamodel = metamodel_from_file(metamodel_path)
+            target_model = target_metamodel.model_from_file(model_path)
+
+            # create viewX interpreter based on viewX model and interpret target textX model
+            viewX_interpreter = ViewXInterpreter(view_model)
+            viewX_interpreter.interpret(target_model)
+
+            # assign socket.io server port number
+            socket_port = sys.argv[3] if sys.argv.__len__() > 3 else '3002'
+            preview_generator.generate(viewX_interpreter, socket_port)
+            # print messages below are interpreted by viewX extension
+            print('success')
+        except TextXSyntaxError as e:
+            print('error')
+            print('TextXSyntaxError: {}'.format(e.__str__()))
+        except TextXSemanticError as e:
+            print('error')
+            print('TextXSemanticError: {}'.format(e.__str__()))

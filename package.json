@@ -1,7 +1,7 @@
 {
   "name": "viewx-vscode",
   "displayName": "viewX-vscode",
-  "description": "Extension for visualizing DSL code structure written using textX.",
+  "description": "Extension for visualizing code/model structure of DSL written using textX.",
   "version": "0.1.0",
   "publisher": "dkupco",
   "license": "MIT",
@@ -171,14 +171,14 @@
         {
           "command": "viewx.fitDefinition",
           "group": "group@2",
-          "when": "editorTextFocus"
+          "when": "config.viewX.canPreviewActiveDocument && editorTextFocus"
         }
       ]
     }
   },
   "scripts": {
-    "vscode:prepublish": "tsc -p ./ --allowJs",
-    "compile": "tsc -watch -p ./ --allowJs",
+    "vscode:prepublish": "tsc -p ./ --allowJs && cpx \"src/**/*.{py,template,html}\" out",
+    "compile": "tsc -watch -p ./ --allowJs && cpx \"src/**/*.{py,template,html}\" out --watch",
     "postinstall": "node ./node_modules/vscode/bin/install",
     "test": "node ./node_modules/vscode/bin/test"
   },
@@ -196,6 +196,7 @@
     "@types/express": "^4.0.37",
     "@types/mocha": "^2.2.42",
     "@types/node": "^8.0.24",
+    "cpx": "^1.5.0",
     "mocha": "^3.5.0",
     "tslint": "^5.7.0",
     "typescript": "^2.4.2",

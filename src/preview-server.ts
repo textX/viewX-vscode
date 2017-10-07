@@ -1,6 +1,6 @@
 import * as browserSync from "browser-sync";
 
-export class Server {
+export class PreviewServer {
 
     private static serverName: string = "viewx-preview-server";
 

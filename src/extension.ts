@@ -6,7 +6,7 @@ import * as vscode from "vscode"
 import * as pythonShell from "python-shell"
 // import modules for web server preview
 import { BrowserContentProvider } from "./browserContentProvider";
-import { Server } from "./server";
+import { PreviewServer } from "./preview-server";
 import { Utility } from "./utility";
 // import viewX configuration module
 import { ViewXConfig } from "./viewXConfig"
@@ -26,16 +26,14 @@ export function activate(context: vscode.ExtensionContext) {
     let disposables = [];
     let viewXExtension = new ViewXExtension();
 
-    let socketPort: number = viewXExtension.socketConfig.get("port") as number;
-    console.log(socketPort);
+    let socketPort: number = viewXExtension.socketServerConfig.get("port") as number;
     // start socket server
     socketserver.startSocketServer(socketPort);
 
     // connect to socket server and join extension room
     const socket = io(`http://localhost:${socketPort}`);
-    socket.emit("ext-room", viewXExtension.socketConfig.get("debugMode") as boolean);
+    socket.emit("ext-room", viewXExtension.socketServerConfig.get("debugMode") as boolean);
     socket.on("ext-receive-command", function(command) {
-        console.log("extension: command received - " + command);
         viewXExtension.interpretCommand(command);
     });
 
@@ -53,9 +51,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     // When configuration is changed, resume web server.
     vscode.workspace.onDidChangeConfiguration(() => {
-        const settings = viewXExtension.serverConfig.get("isWatchConfiguration") as boolean;
+        const settings = viewXExtension.previewServerConfig.get("isWatchConfiguration") as boolean;
         if (settings) {
-            viewXExtension.resumeServer();
+            viewXExtension.resumePreviewServer();
         }
     });
 
@@ -66,7 +64,7 @@ export function activate(context: vscode.ExtensionContext) {
                 // re-generate preview html file when model file is saved (apply changes)
                 viewXExtension.generatePreviewHtmlForModelAsync(activeModelUri, () => {
                     // when file is saved, reload browser.
-                    viewXExtension.openModelPreview(() => { Server.reload("preview.html"); });
+                    viewXExtension.openModelPreview(() => { PreviewServer.reload("preview.html"); });
                 });
             }
         }
@@ -94,7 +92,8 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     disposables.push(vscode.commands.registerCommand("viewx.initProject", (explorerUri: vscode.Uri) => {
-        if (explorerUri === undefined) {
+        // check if explorerUri is empty object (keyboard shortcut is used)
+        if (Object.keys(explorerUri).length === 0) {
             vscode.window.showInputBox({
                 prompt: "Please insert a path where you want to setup a ViewX project",
                 placeHolder: "Path to the project",
@@ -116,19 +115,17 @@ export function activate(context: vscode.ExtensionContext) {
                     let projectName = result;
                     let options = {
                         mode: "text",
-                        // pythonPath: "C:/Users/dkupco/VEnvs/viewx/Scripts/python", // DEV
                         pythonPath: `${viewXExtension.viewXVEnvPath}/Scripts/python`,
                         args: [projectPath, projectName]
                     };
 
-                    // let pyInterpreter = "C:/Users/dkupco/Documents/GitHub/viewX-vscode/src/python/viewx_init_project.py"; // DEV
-                    let pyInterpreter = `${viewXExtension.extensionPath}/src/python/viewx_init_project.py`;
+                    let pyInterpreter = `${viewXExtension.extensionPath}/out/python/viewx_init_project.py`;
 
                     pythonShell.run(pyInterpreter, options, function (err, results) {
                         // if (err) throw err;
                         // results is an array consisting of messages collected during execution
                         let projectFolder = vscode.Uri.file(`${projectPath}/${projectName}`);
-                        if ((results[0] as string).trim() === "success") { // "success" is returned by the .py script
+                        if (results && results.length > 0 && (results[0] as string).trim() === "success") { // "success" is returned by the .py script
                             vscode.commands.executeCommand("vscode.openFolder", projectFolder, true);
                         }
                     });
@@ -139,12 +136,12 @@ export function activate(context: vscode.ExtensionContext) {
 
     disposables.push(vscode.commands.registerCommand("viewx.previewModel", () => {
         let activeModelUri: vscode.Uri = vscode.window.activeTextEditor.document.uri;
-        // let fileName: string = Utility.getFileNameFromFileUriPath(activeModelUri.path);
-        // let viewXModel: string = viewXExtension.findMatchingViewXModel(fileName);
-        if (viewXExtension.extensionConfig.get("canPreviewActiveDocument") as boolean) {
+        let fileName: string = Utility.getFileNameFromFileUriPath(activeModelUri.path);
+        let viewXModel: string = viewXExtension.findMatchingViewXModel(fileName);
+        if (viewXModel !== undefined) {
             viewXExtension.generatePreviewHtmlForModelAsync(activeModelUri, () => {
                 viewXExtension.openModelPreview(() => {
-                    Server.reload("preview.html");
+                    PreviewServer.reload("preview.html");
                 });
             });
         }
@@ -158,14 +155,14 @@ export function activate(context: vscode.ExtensionContext) {
         return vscode.commands.executeCommand("vscode.open", uri);
     }));
 
-    disposables.push(vscode.commands.registerCommand("viewx.stopServer", () => {
-        Server.stop();
-        vscode.window.showInformationMessage("Stop the Web Server successfully.");
+    disposables.push(vscode.commands.registerCommand("viewx.stopPreviewServer", () => {
+        PreviewServer.stop();
+        vscode.window.showInformationMessage("Stop the PreviewServer successfully.");
     }));
 
-    disposables.push(vscode.commands.registerCommand("viewx.resumeServer", () => {
-        viewXExtension.resumeServer();
-        vscode.window.showInformationMessage("Resume the Web Server.");
+    disposables.push(vscode.commands.registerCommand("viewx.resumePreviewServer", () => {
+        viewXExtension.resumePreviewServer();
+        vscode.window.showInformationMessage("Resume the PreviewServer.");
     }));
 
     disposables.push(vscode.commands.registerCommand("viewx.fitDefinition", (explorerUri: vscode.Uri) => {
@@ -183,7 +180,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 // this method is called when your extension is deactivated
 export function deactivate() {
-    Server.stop();
+    PreviewServer.stop();
 }
 
 class ViewXExtension {
@@ -191,8 +188,8 @@ class ViewXExtension {
     public extensionPath: string;
     public viewXVEnvPath: string;
     public extensionConfig: vscode.WorkspaceConfiguration;
-    public serverConfig: vscode.WorkspaceConfiguration;
-    public socketConfig: vscode.WorkspaceConfiguration;
+    public previewServerConfig: vscode.WorkspaceConfiguration;
+    public socketServerConfig: vscode.WorkspaceConfiguration;
 
     // changeable values
     public viewXProjectConfig: ViewXConfig;
@@ -202,8 +199,8 @@ class ViewXExtension {
 
     constructor() {
         this.extensionConfig = vscode.workspace.getConfiguration("viewX");
-        this.serverConfig = vscode.workspace.getConfiguration("viewX.previewServer");
-        this.socketConfig = vscode.workspace.getConfiguration("viewX.socketServer");
+        this.previewServerConfig = vscode.workspace.getConfiguration("viewX.previewServer");
+        this.socketServerConfig = vscode.workspace.getConfiguration("viewX.socketServer");
         this.extensionPath = vscode.extensions.getExtension(this.extensionConfig.get("fullExtensionName") as string).extensionPath;
         this.viewXVEnvPath = process.env[this.extensionConfig.get("envVariableName") as string];
 
@@ -217,7 +214,7 @@ class ViewXExtension {
                 this.viewXProjectConfig = loadJsonFile.sync(`${workspacePath}/vxconfig.json`);
                 // TODO: enable running multiple instances
                 // start browser sync server only if it is valid viewX project
-                this.startServer();
+                this.startPreviewServer();
             // need to catch the error in order to continue activating the extension
             } catch (error) {
                 console.log(error);
@@ -246,17 +243,26 @@ class ViewXExtension {
             pythonPath: envPythonUri.fsPath,
             // pythonOptions: ["-u"],
             // scriptPath: "path/to/my/scripts",
-            args: [`${workspaceUri}/${this.activeViewXModel}`, modelUri.fsPath, this.socketConfig.get("port")]
+            args: [`${workspaceUri}/${this.activeViewXModel}`, modelUri.fsPath, this.socketServerConfig.get("port")]
         };
 
-        //let pyInterpreter = vscode.Uri.parse("file:///D:/Programiranje/MasterRad/viewx-vscode/src/viewx_interpreter.py");
-        let pyInterpreterUri = vscode.Uri.file(`${this.extensionPath}/src/python/viewx_interpreter.py`);
+        let pyInterpreterUri = vscode.Uri.file(`${this.extensionPath}/out/python/viewx_interpreter.py`);
 
         pythonShell.run(pyInterpreterUri.fsPath, options, function (err, results) {
             // if (err) throw err;
             // results is an array consisting of messages collected during execution
-            if (callback) {
-                callback();
+            if (results && results.length > 0) {
+                if ((results[0] as string).trim() === "success") {
+                    if (callback) {
+                        callback();
+                    }
+                }
+                else if((results[0] as string).trim() === "error") {
+                    vscode.window.showErrorMessage(results[1] as string);
+                }
+                else {
+                    vscode.window.showErrorMessage("Unexpected error!");
+                }
             }
         });
         this.lastPreviewedFileUri = modelUri;
@@ -281,36 +287,26 @@ class ViewXExtension {
         }, (reason) => {
                 vscode.window.showErrorMessage(reason);
         });
-        // vscode.workspace.openTextDocument(previewUri).then(document => {
-        //     let options: vscode.TextDocumentShowOptions = {
-        //         viewColumn: viewColumn,
-        //         preserveFocus: false,
-        //         preview: true
-        //     };
-        //     vscode.window.showTextDocument(document, options);
-        // });
     }
 
-    public startServer() {
+    public startPreviewServer() {
         Utility.setRandomPort();
-        const port = this.serverConfig.get("port") as number;
-        const proxy = this.serverConfig.get("proxy") as string;
-        const isSync = this.serverConfig.get("sync") as boolean;
+        const port = this.previewServerConfig.get("port") as number;
+        const proxy = this.previewServerConfig.get("proxy") as string;
+        const isSync = this.previewServerConfig.get("sync") as boolean;
         // const rootPath = vscode.workspace.rootPath || Utility.getOpenFilePath(vscode.window.activeTextEditor.document.fileName);
         // instead of workspace path, we now pass root path of the preview.html file (within extension root folder)
         const rootPath = Utility.getOpenFilePath(Utility.getPreviewHtmlFilePath());
-        Server.start(rootPath, port, isSync, proxy);
+        PreviewServer.start(rootPath, port, isSync, proxy);
     }
 
-    public resumeServer() {
-        Server.stop();
-        this.startServer();
+    public resumePreviewServer() {
+        PreviewServer.stop();
+        this.startPreviewServer();
     }
 
     public interpretCommand(command: string) {
-        console.log("interpret command: " + command);
         if (command.startsWith("select")) {
-            console.log("select command");
             let args = command.split("|");
             let offset = Number(args[1].split("=")[1]);
             let offset_end = Number(args[2].split("=")[1]);
