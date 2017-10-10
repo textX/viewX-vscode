@@ -1,4 +1,3 @@
-// this could be even moved to config file
 tximport StateMachine from "./../../tx_samples/state_machine/state_machine.tx"
 
 style:

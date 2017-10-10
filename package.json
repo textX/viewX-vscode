@@ -1,8 +1,15 @@
 {
-  "name": "viewx-vscode",
-  "displayName": "viewX-vscode",
+  "name": "viewx",
+  "displayName": "viewX",
   "description": "Extension for visualizing code/model structure of DSL written using textX.",
   "version": "0.1.0",
+  "homepage": "https://github.com/danielkupco/viewX-vscode",
+  "icon": "images/vx.png",
+  "author": {
+    "name": "Daniel Kupco",
+    "email": "kupcodanex@outlook.com",
+    "url": "https://github.com/danielkupco"
+  },
   "publisher": "dkupco",
   "license": "MIT",
   "repository": {
@@ -16,8 +23,8 @@
     "vscode": "^1.12.0"
   },
   "categories": [
-    "Other"
-  ],
+    "Languages", "Other"
+  ],  
   "keywords": [
     "viewX",
     "textX",
@@ -38,7 +45,7 @@
       "properties": {
         "viewX.fullExtensionName": {
           "type": "string",
-          "default": "dkupco.viewx-vscode",
+          "default": "dkupco.viewx",
           "description": "Full extension name."
         },
         "viewX.previewFilePath": {
@@ -186,9 +193,10 @@
     "browser-sync": "^2.18.13",
     "cors": "^2.8.4",
     "express": "^4.15.4",
+    "python-shell": "^0.4.0",
     "load-json-file": "^3.0.0",
     "socket.io": "^2.0.3",
-    "typescript": "^2.4.2",
+    "typescript": "^2.5.3",
     "vscode": "^1.1.5"
   },
   "devDependencies": {
@@ -199,7 +207,7 @@
     "cpx": "^1.5.0",
     "mocha": "^3.5.0",
     "tslint": "^5.7.0",
-    "typescript": "^2.4.2",
+    "typescript": "^2.5.3",
     "vscode": "^1.1.5"
   }
 }

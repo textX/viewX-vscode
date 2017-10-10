@@ -540,3 +540,6 @@ if __name__ == '__main__':
         except TextXSemanticError as e:
             print('error')
             print('TextXSemanticError: {}'.format(e.__str__()))
+        except FileNotFoundError as e:
+            print('error')
+            print('FileNotFoundError: {} {}'.format(e.strerror, e.filename))
