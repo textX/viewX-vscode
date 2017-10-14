@@ -27,8 +27,18 @@ export function activate(context: vscode.ExtensionContext) {
     let viewXExtension = new ViewXExtension();
 
     let socketPort: number = viewXExtension.socketServerConfig.get("port") as number;
-    // start socket server
-    socketserver.startSocketServer(socketPort);
+    let usedPorts: Array<number> = viewXExtension.socketServerConfig.get("usedPorts") as Array<number>;
+
+    // start socket server asynchronously, promise is returned
+    socketserver.startSocketServer(socketPort).then(function(usedPort) {
+		viewXExtension.activeSocketPort = usedPort;
+		if (viewXExtension.activeSocketPort > -1 && !(usedPorts.indexOf(viewXExtension.activeSocketPort) > -1)) {
+			usedPorts.push(viewXExtension.activeSocketPort);
+			viewXExtension.socketServerConfig.update("usedPorts", usedPorts, true);
+		}
+	}).catch(function(error) {
+		console.log("Failed to start socket server: " + error);
+	});
 
     // connect to socket server and join extension room
     const socket = io(`http://localhost:${socketPort}`);
@@ -165,11 +175,16 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage("Resume the PreviewServer.");
     }));
 
-    disposables.push(vscode.commands.registerCommand("viewx.fitDefinition", (explorerUri: vscode.Uri) => {
+    disposables.push(vscode.commands.registerCommand("viewx.fitDefinition", () => {
         let cursorPosition = vscode.window.activeTextEditor.selection.start;
         let lineBeginning = new vscode.Position(cursorPosition.line, 0);
         let offset = vscode.window.activeTextEditor.document.offsetAt(lineBeginning);
         socket.emit("ext-send-command", `fit|offset=${offset}`);
+    }));
+
+    disposables.push(vscode.commands.registerCommand("viewx.showUsedPorts", () => {
+        let usedPorts: Array<number> = viewXExtension.socketServerConfig.get("usedPorts") as Array<number>;
+        vscode.window.showInformationMessage(`Port used by this instance: ${viewXExtension.activeSocketPort}. Other ports taken by socket.io server are: ${usedPorts}`);
     }));
 
     // subscribe all commands
@@ -181,6 +196,14 @@ export function activate(context: vscode.ExtensionContext) {
 // this method is called when your extension is deactivated
 export function deactivate() {
     PreviewServer.stop();
+    let usedPorts: Array<number> = this.viewXExtension.socketServerConfig.get("usedPorts") as Array<number>;
+    if (this.viewXExtension.activeSocketPort > -1 && this.viewXExtension.activeSocketPort in usedPorts) {
+        let idx: number = usedPorts.indexOf(this.viewXExtension.activeSocketPort);
+        if (idx > -1) {
+            usedPorts.splice(idx, 1);
+            this.viewXExtension.socketServerConfig.update("usedPorts", usedPorts, true);
+        }
+    }
 }
 
 class ViewXExtension {
@@ -190,6 +213,7 @@ class ViewXExtension {
     public extensionConfig: vscode.WorkspaceConfiguration;
     public previewServerConfig: vscode.WorkspaceConfiguration;
     public socketServerConfig: vscode.WorkspaceConfiguration;
+    public activeSocketPort: number;
 
     // changeable values
     public viewXProjectConfig: ViewXConfig;
@@ -290,7 +314,7 @@ class ViewXExtension {
     }
 
     public startPreviewServer() {
-        Utility.setRandomPort();
+        // Utility.setRandomPort();
         const port = this.previewServerConfig.get("port") as number;
         const proxy = this.previewServerConfig.get("proxy") as string;
         const isSync = this.previewServerConfig.get("sync") as boolean;

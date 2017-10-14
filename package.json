@@ -5,6 +5,9 @@
   "version": "0.1.0",
   "homepage": "https://github.com/danielkupco/viewX-vscode",
   "icon": "images/vx.png",
+  "galleryBanner": {
+    "theme": "dark"
+  },
   "author": {
     "name": "Daniel Kupco",
     "email": "kupcodanex@outlook.com",
@@ -94,6 +97,14 @@
           "default": 3002,
           "description": "Port number of the socket.io server."
         },
+        "viewX.socketServer.usedPorts": {
+          "type": "array",
+          "description": "Port number of the socket.io server.",
+          "items": {
+            "type": "number",
+            "title": "Port number"
+          }
+        },
         "viewX.socketServer.debugMode": {
           "type": "boolean",
           "default": true,
@@ -126,6 +137,10 @@
       {
         "command": "viewx.fitDefinition",
         "title": "viewX: Fit definition on graph"
+      },
+      {
+        "command": "viewx.showUsedPorts",
+        "title": "viewX: Show used ports by socket.io server"
       }
     ],
     "keybindings": [
@@ -152,6 +167,10 @@
       {
         "command": "viewx.fitDefinition",
         "key": "ctrl+alt+v f"
+      },
+      {
+        "command": "viewx.showUsedPorts",
+        "key": "ctrl+alt+v u"
       }
     ],
     "menus": {
@@ -196,6 +215,7 @@
     "python-shell": "^0.4.0",
     "load-json-file": "^3.0.0",
     "socket.io": "^2.0.3",
+    "portscanner": "^2.1.1",
     "typescript": "^2.5.3",
     "vscode": "^1.1.5"
   },
