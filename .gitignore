@@ -1,6 +1,10 @@
-out
-node_modules
+/out
+/node_modules
 *.log
 *.pyc
-.vscode
-.idea
+/.vscode
+/.idea
+/vsc-extension-quickstart.md
+/.vscodeignore
+/docs
+/site

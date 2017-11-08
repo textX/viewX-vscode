@@ -1,0 +1,13 @@
+site_name: viewX
+
+theme: mkdocs
+        
+pages:
+- Home: index.md
+- Documentation:
+  - Installation: installation.md
+  - Features: features.md
+  - Grammar: grammar.md
+  - User guide: user-guide.md
+- About: about.md
+- Releases: releases.md
