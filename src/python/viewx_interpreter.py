@@ -150,15 +150,15 @@ class ViewXInterpreter(object):
             for prop in view.properties:
                 if prop.__class__.__name__ == 'EdgeStartProperty':
                     start_element = self.get_class_property(prop.class_properties, item)
-                    start_element = self.elements.get(start_element.__hash__(), None)
+                    start_element = self.elements.get(cy.small_hash(start_element), None)
                 elif prop.__class__.__name__ == 'EdgeEndProperty':
                     end_element = self.get_class_property(prop.class_properties, item)
-                    end_element = self.elements.get(end_element.__hash__(), None)
+                    end_element = self.elements.get(cy.small_hash(end_element), None)
                 # when both start and end nodes are defined
                 if start_element is not None and end_element is not None:
-                    graph_element = cy.Edge(start_element, end_element, item.__hash__())
+                    graph_element = cy.Edge(start_element, end_element, cy.small_hash(item))
         else: # element is node
-            graph_element = cy.Node(item.__hash__())
+            graph_element = cy.Node(cy.small_hash(item))
 
         # check item referencing properties (label, is_edge(connection points), parent...)
         element_label = self.resolve_element_label(item, view.properties)
@@ -180,7 +180,7 @@ class ViewXInterpreter(object):
             # resolve links to properties
             property_links = self.get_all_resolved_properties(property_link.link_to.class_properties, item)
             # transform in dictionary (hash_code : array of properties)
-            transformed_links = {link.__hash__(): [] for link in property_links}
+            transformed_links = {cy.small_hash(link): [] for link in property_links}
 
             # add property link classes as first property in each link
             for value_props in transformed_links.values():
@@ -208,7 +208,7 @@ class ViewXInterpreter(object):
         if hasattr(view, 'parent_view') and view.parent_view is not None:
             parent = self.find_view_parent_tx_type(item, view, self.model)
             if parent is not None:
-                graph_element.add_data('parent', parent.__hash__())
+                graph_element.add_data('parent', cy.small_hash(parent))
 
         # if parent class view is defined
         if hasattr(view, 'container') and view.container:
@@ -224,8 +224,8 @@ class ViewXInterpreter(object):
                             container.add_data('label', element_label)
                         break
                 container.add_class('{}-container'.format(view.name.lower()))
-                self.elements.update({container.__hash__(): container})
-            graph_element.add_data('parent', container.__hash__())
+                self.elements.update({cy.small_hash(container): container})
+            graph_element.add_data('parent', cy.small_hash(container))
 
         # add type definition offset
         graph_element.add_data('offset', item._tx_position)
@@ -233,7 +233,7 @@ class ViewXInterpreter(object):
 
         # add class of view name (textX model type name)
         graph_element.add_class(view.name.lower())
-        return {item.__hash__(): graph_element}
+        return {cy.small_hash(item): graph_element}
 
     def resolve_element_label(self, element, properties):
         element_label = None
@@ -294,10 +294,10 @@ class ViewXInterpreter(object):
             if result_property.__class__.__name__ == 'list':
                 match_any = True
                 for result in result_property:
-                    match_any = match_any and result.__hash__() == item_to_find.__hash__()
+                    match_any = match_any and cy.small_hash(result) == cy.small_hash(item_to_find)
                 return match_any
             else:
-                return result_property.__hash__() == item_to_find.__hash__()
+                return cy.small_hash(result_property) == cy.small_hash(item_to_find)
 
         if result_property.__class__.__name__ == 'list':
             # try for each item because not every item has to have defined all properties
@@ -372,52 +372,52 @@ class ViewXInterpreter(object):
         """
 
         # find parent
-        for key1, value1 in tx_root_item._tx_attrs.items():
+        for parent_key, parent_value in tx_root_item._tx_attrs.items():
             # if defined get the property
-            if value1.cont:
-                items1 = tx_root_item.__getattribute__(key1)
+            if parent_value.cont:
+                parents = tx_root_item.__getattribute__(parent_key)
                 # parent is list of items
-                if items1.__class__.__name__ == 'list':
-                    first1 = items1[0] if items1.__len__() > 0 else None
-                    if first1 and view.parent_view:
+                if parents.__class__.__name__ == 'list':
+                    first_parent = parents[0] if parents.__len__() > 0 else None
+                    if first_parent and view.parent_view:
                         # if any of found items is type of parent type defined in view
-                        if first1.__class__.__name__ == view.parent_view.name:
-                            for item1 in items1:
+                        if first_parent.__class__.__name__ == view.parent_view.name:
+                            for parent in parents:
                                 # find child
-                                for key2, value2 in item1._tx_attrs.items():
-                                    items2 = item1.__getattribute__(key2)
+                                for child_key, child_value in parent._tx_attrs.items():
+                                    children = parent.__getattribute__(child_key)
                                     # child is list of items
-                                    if items2.__class__.__name__ == 'list':
-                                        first2 = items2[0] if items2.__len__() > 0 else None
-                                        if first2 and first2.__class__.__name__ == tx_item.__class__.__name__:
-                                            for item2 in items2:
-                                                if tx_item.__hash__() == item2.__hash__():
-                                                    return item1
+                                    if children.__class__.__name__ == 'list':
+                                        first_child = children[0] if children.__len__() > 0 else None
+                                        if first_child and first_child.__class__.__name__ == tx_item.__class__.__name__:
+                                            for child in children:
+                                                if cy.small_hash(tx_item) == cy.small_hash(child):
+                                                    return parent
                                             break
                                     # child is single item
                                     else:
-                                        if items2.__class__.__name__ == tx_item.__class__.__name__:
-                                            return item1
+                                        if children.__class__.__name__ == tx_item.__class__.__name__:
+                                            return parent
                 # parent is single item
                 else:
-                    if items1 and view.parent_view:
-                        if items1.__class__.__name__ == view.parent_view.name:
-                            for item1 in items1:
+                    if parents and view.parent_view:
+                        if parents.__class__.__name__ == view.parent_view.name:
+                            for parent in parents:
                                 # find child
-                                for key2, value2 in item1._tx_attrs.items():
-                                    items2 = item1.__getattribute__(key2)
+                                for child_key, child_value in parent._tx_attrs.items():
+                                    children = parent.__getattribute__(child_key)
                                     # child is list of items
-                                    if items2.__class__.__name__ == 'list':
-                                        first2 = items2[0] if items2.__len__() > 0 else None
-                                        if first2 and first2.__class__.__name__ == tx_item.__class__.__name__:
-                                            for item2 in items2:
-                                                if tx_item.__hash__() == item2.__hash__():
-                                                    return item1
+                                    if children.__class__.__name__ == 'list':
+                                        first_child = children[0] if children.__len__() > 0 else None
+                                        if first_child and first_child.__class__.__name__ == tx_item.__class__.__name__:
+                                            for child in children:
+                                                if cy.small_hash(tx_item) == cy.small_hash(child):
+                                                    return parent
                                             break
                                     # child is single item
                                     else:
-                                        if items2.__class__.__name__ == tx_item.__class__.__name__:
-                                            return item1
+                                        if children.__class__.__name__ == tx_item.__class__.__name__:
+                                            return parent
         return None
 
     def find_element_with_class(self, _class):
@@ -447,7 +447,7 @@ class ViewXInterpreter(object):
         """
 
         link_dict = self.links.get(element.__class__.__name__, {})
-        link_dict.update({element.__hash__(): element_links})
+        link_dict.update({cy.small_hash(element): element_links})
         self.links[element.__class__.__name__] = link_dict
 
     def create_links(self):
@@ -479,7 +479,7 @@ class ViewXInterpreter(object):
                         new_edges.append(new_edge)
         # after creation add them to the elements
         for edge in new_edges:
-            self.elements[edge.__hash__()] = edge
+            self.elements[cy.small_hash(edge)] = edge
 
 
 def build_path_from_import(view_model, _import):
@@ -507,7 +507,7 @@ def build_path_from_import(view_model, _import):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 3:
+    if len(sys.argv) < 3:  # the script expects at least 2 arguments (+1 implicit which is script name)
         print('Usage: python {} <view_model> <model> [<socketPort>]'.format(sys.argv[0]))
     else:
         try:

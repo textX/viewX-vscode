@@ -8,14 +8,15 @@ interface ProjectConfig {
     name: string;
     version: string;
     root: string;
+    socketPort: number
 }
 
 interface ViewXModelsConfig {
     root: string;
-    filterMappings: FilterMapping[];
+    patternMappings: PatternMapping[];
 }
 
-interface FilterMapping {
+interface PatternMapping {
     modelName: string;
-    filter: string;
+    pattern: string;
 }

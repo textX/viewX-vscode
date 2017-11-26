@@ -29,10 +29,10 @@ export class Utility {
         return vscode.Uri.parse(`http://${host}:${port}/${uri.path}`);
     }
 
-    public static getPreviewHtmlFilePath(): string {
+    public static getPreviewHtmlFileUri(): vscode.Uri {
         const extensionPath = vscode.extensions.getExtension(Utility.extensionConfig.get("fullExtensionName") as string).extensionPath;
         const previewFullPath = vscode.Uri.file(extensionPath + (Utility.extensionConfig.get("previewFilePath") as string));
-        return previewFullPath.fsPath;
+        return previewFullPath;
     }
 
     public static getPreviewHtmlRelativePath(): string {
@@ -53,25 +53,25 @@ export class Utility {
     }
 
     /**
-     * When vscode.workspace.rootPath is undefined (When we use `open file`, this value will be undefined),
-     * we use filepath without file name.
+     * Returns parent path of the relative path (removes the part after the last '/' sign).
      * @param relativePath
      */
-    public static getOpenFilePath(relativePath: string) {
-        let paths = relativePath.split("\\");
+    public static getParentPath(relativePath: string) {
+        let paths = relativePath.split("/");
         // remove file name.
         paths.pop();
-        return paths.join("\\");
+        let parentPath = vscode.Uri.file(paths.join("/"));
+        return parentPath.fsPath;
     }
 
     // could be improved with partial name matching, e.g. test*.txt or *test.txt
-    public static isFileMatchingFilter(fileName: string, filter: string): boolean {
-        if (filter === "*.*" || fileName === filter) {
+    public static isFileMatchingPattern(fileName: string, pattern: string): boolean {
+        if (pattern === "*.*" || fileName === pattern) {
             return true;
         }
-        if (filter.startsWith("*.")) {
+        if (pattern.startsWith("*.")) {
             // joining back to match possible multiple extensions
-            if (fileName.split(".").slice(1).join(".") === filter.split(".").slice(1).join(".")) {
+            if (fileName.split(".").slice(1).join(".") === pattern.split(".").slice(1).join(".")) {
                 return true;
             }
         }

@@ -3,14 +3,15 @@
         "type": "viewX",
         "name": "{{ projectName }}",
         "version": "0.1",
-        "root": "."
+        "root": ".",
+        "socketPort": 3002
     },
     "viewXModels": {
         "root": ".",
-        "filterMappings": [
+        "patternMappings": [
             {
                 "modelName": "course_overview.vx",
-                "filter": "*.univ"
+                "pattern": "*.univ"
             }
         ]
     }

@@ -11,7 +11,7 @@ class Element(object):
         self.group = 'nodes'  # 'nodes' for a node, 'edges' for an edge
         self.data = {  # element data (put json serializable dev data here)
             # define 'source' and 'target' for an edge
-            'id': self.__hash__() if _id is None else _id
+            'id': small_hash(self) if _id is None else _id
         }
         self.scratch = {}  # scratchpad data (usually temp or non-serializable data)
         self.selected = False  # whether the element is selected (default false)
@@ -113,3 +113,25 @@ def deserialize_json(json):
             return obj
     else:
         return json
+
+
+def small_hash(instance, digits=9):
+    """
+    Cytoscape.js has trouble with dealing large or negative integers.
+
+    Returns positive and n-digit hash of the passed instance.
+
+    :param instance: for which it's positive 9-digit hash is returned
+
+    :param digits: number of digits of the resulting hash. Default is 9.
+
+    :return: positive 9-digit hash of the instance
+    """
+    # take positive value
+    hash = instance.__hash__().__abs__()
+    hash_str = str(hash)
+    # reduce hash to n digit
+    hash = int(hash_str[-digits:]) if hash_str.__len__() > digits else hash
+    # if first digit iz 0 increase digits to n
+    hash = hash * 10 if str(hash).__len__() < digits else hash
+    return hash

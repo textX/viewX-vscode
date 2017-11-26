@@ -14,6 +14,7 @@ import { ViewXConfig } from "./viewXConfig"
 import * as io from "socket.io-client"
 // import socket server (communication proxy)
 import * as socketserver from "./socket-server"
+import { Disposable } from "vscode";
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -23,33 +24,13 @@ export function activate(context: vscode.ExtensionContext) {
     // This line of code will only be executed once when your extension is activated
     console.log("Congratulations, your extension 'viewx-vscode' is now active!");
 
-    let disposables = [];
-    let viewXExtension = new ViewXExtension();
+    let disposables: Disposable[] = [];
+    let viewXExtension: ViewXExtension = new ViewXExtension();
 
-    let socketPort: number = viewXExtension.socketServerConfig.get("port") as number;
-    let usedPorts: Array<number> = viewXExtension.socketServerConfig.get("usedPorts") as Array<number>;
-
-    // start socket server asynchronously, promise is returned
-    socketserver.startSocketServer(socketPort).then(function(usedPort) {
-		viewXExtension.activeSocketPort = usedPort;
-		if (viewXExtension.activeSocketPort > -1 && !(usedPorts.indexOf(viewXExtension.activeSocketPort) > -1)) {
-			usedPorts.push(viewXExtension.activeSocketPort);
-			viewXExtension.socketServerConfig.update("usedPorts", usedPorts, true);
-		}
-	}).catch(function(error) {
-		console.log("Failed to start socket server: " + error);
-	});
-
-    // connect to socket server and join extension room
-    const socket = io(`http://localhost:${socketPort}`);
-    socket.emit("ext-room", viewXExtension.socketServerConfig.get("debugMode") as boolean);
-    socket.on("ext-receive-command", function(command) {
-        viewXExtension.interpretCommand(command);
-    });
-
-    // provider settings.
-    const provider = new BrowserContentProvider();
-    const registration = vscode.workspace.registerTextDocumentContentProvider("http", provider);
+    // prepare extension
+    startSocketServer(viewXExtension);
+    connectToSocketServer(viewXExtension);
+    registerBrowserProvider(disposables);
 
     // update preview on document change event
     // vscode.workspace.onDidChangeTextDocument((e: vscode.TextDocumentChangeEvent) => {
@@ -123,19 +104,22 @@ export function activate(context: vscode.ExtensionContext) {
             }).then(result => {
                 if (result !== undefined) {
                     let projectName = result;
+                    let pyScriptUri = vscode.Uri.file(`${viewXExtension.extensionPath}/out/python/viewx_init_project.py`);
                     let options = {
                         mode: "text",
-                        pythonPath: `${viewXExtension.viewXVEnvPath}/Scripts/python`,
+                        pythonPath: vscode.Uri.file(`${viewXExtension.viewXVEnvPath}/python`).fsPath,
+                        // pythonOptions: ["-u"],
+                        // need to explicitly specify script path to be cross-platform functional
+                        scriptPath: pyScriptUri.fsPath,
                         args: [projectPath, projectName]
                     };
 
-                    let pyInterpreter = `${viewXExtension.extensionPath}/out/python/viewx_init_project.py`;
-
-                    pythonShell.run(pyInterpreter, options, function (err, results) {
+                    pythonShell.run(pyScriptUri.fsPath, options, function (err, results) {
                         // if (err) throw err;
                         // results is an array consisting of messages collected during execution
-                        let projectFolder = vscode.Uri.file(`${projectPath}/${projectName}`);
-                        if (results && results.length > 0 && (results[0] as string).trim() === "success") { // "success" is returned by the .py script
+                        // "success" is returned by the .py script
+                        if (results && results.length > 0 && (results[0] as string).trim() === "success") {
+                            let projectFolder = vscode.Uri.file(`${projectPath}/${projectName}`);
                             vscode.commands.executeCommand("vscode.openFolder", projectFolder, true);
                         }
                     });
@@ -179,7 +163,8 @@ export function activate(context: vscode.ExtensionContext) {
         let cursorPosition = vscode.window.activeTextEditor.selection.start;
         let lineBeginning = new vscode.Position(cursorPosition.line, 0);
         let offset = vscode.window.activeTextEditor.document.offsetAt(lineBeginning);
-        socket.emit("ext-send-command", `fit|offset=${offset}`);
+        this.socket.emit("ext-send-command", `fit|offset=${offset}`);
+        console.log("extension sending command: " + `fit|offset=${offset}`);
     }));
 
     disposables.push(vscode.commands.registerCommand("viewx.showUsedPorts", () => {
@@ -195,7 +180,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 // this method is called when your extension is deactivated
 export function deactivate() {
-    PreviewServer.stop();
+    this.socket.emit("ext-send-command", "deactivate|start");
     let usedPorts: Array<number> = this.viewXExtension.socketServerConfig.get("usedPorts") as Array<number>;
     if (this.viewXExtension.activeSocketPort > -1 && this.viewXExtension.activeSocketPort in usedPorts) {
         let idx: number = usedPorts.indexOf(this.viewXExtension.activeSocketPort);
@@ -204,6 +189,53 @@ export function deactivate() {
             this.viewXExtension.socketServerConfig.update("usedPorts", usedPorts, true);
         }
     }
+    PreviewServer.stop();
+    this.socket.emit("ext-send-command", "deactivate|end");
+}
+
+function startSocketServer(viewXExtension) {
+    let usedPorts: Array<number> = viewXExtension.socketServerConfig.get("usedPorts") as Array<number>;
+
+    // using socket port defined in viewX project config file
+    let socketPort: number = undefined;
+    if (viewXExtension.viewXProjectConfig !== undefined) {
+        socketPort = viewXExtension.viewXProjectConfig.project.socketPort;
+        console.log("Defined socket port: " + socketPort);
+    }
+    if (socketPort === undefined) {
+        socketPort = viewXExtension.socketServerConfig.get("port") as number;
+        console.log("Overriding socket port: " + socketPort);
+    }
+
+    // start socket server asynchronously, promise is returned
+    socketserver.startSocketServer(socketPort).then(function(usedPort) {
+        viewXExtension.activeSocketPort = usedPort;
+        console.log("Using socket port: " + usedPort);
+        if (viewXExtension.activeSocketPort > -1 && !(usedPorts.indexOf(viewXExtension.activeSocketPort) > -1)) {
+            usedPorts.push(viewXExtension.activeSocketPort);
+            viewXExtension.socketServerConfig.update("usedPorts", usedPorts, true);
+            console.log("Updating ports with: " + usedPorts);
+        }
+    }).catch(function(error) {
+        console.log("Failed to start socket server: " + error);
+    });
+}
+
+function connectToSocketServer(viewXExtension) {
+    // connect to socket server and join extension room
+    const socket = io(`http://localhost:${viewXExtension.activeSocketPort}`);
+    socket.emit("ext-room", viewXExtension.socketServerConfig.get("debugMode") as boolean);
+    socket.on("ext-receive-command", function(command) {
+        console.log("extension received command: " + command);
+        viewXExtension.interpretCommand(command);
+    });
+}
+
+function registerBrowserProvider(disposables) {
+    // provider settings.
+    const provider = new BrowserContentProvider();
+    const registration = vscode.workspace.registerTextDocumentContentProvider("http", provider);
+    disposables.push(registration);
 }
 
 class ViewXExtension {
@@ -235,7 +267,7 @@ class ViewXExtension {
             const loadJsonFile = require("load-json-file");
             try {
                 // need to read config file synchronously, because we can end up using it while it has not been read yet
-                this.viewXProjectConfig = loadJsonFile.sync(`${workspacePath}/vxconfig.json`);
+                this.viewXProjectConfig = loadJsonFile.sync(vscode.Uri.file(`${workspacePath}/vxconfig.json`).fsPath);
                 // TODO: enable running multiple instances
                 // start browser sync server only if it is valid viewX project
                 this.startPreviewServer();
@@ -249,8 +281,8 @@ class ViewXExtension {
 
     public findMatchingViewXModel(fileName: string): string {
         let viewXModel = undefined;
-        this.viewXProjectConfig.viewXModels.filterMappings.forEach(map => {
-            if(Utility.isFileMatchingFilter(fileName, map.filter)) {
+        this.viewXProjectConfig.viewXModels.patternMappings.forEach(map => {
+            if(Utility.isFileMatchingPattern(fileName, map.pattern)) {
                 viewXModel = map.modelName;
                 return;
             }
@@ -260,19 +292,19 @@ class ViewXExtension {
     }
 
     public generatePreviewHtmlForModelAsync(modelUri: vscode.Uri, callback?: Function) {
-        let envPythonUri = vscode.Uri.file(`${this.viewXVEnvPath}/Scripts/python`);
+        let envPythonUri = vscode.Uri.file(`${this.viewXVEnvPath}/python`);
         let workspaceUri = vscode.workspace.rootPath;
+        let pyScriptUri = vscode.Uri.file(`${this.extensionPath}/out/python/viewx_interpreter.py`);
         let options = {
             mode: "text",
             pythonPath: envPythonUri.fsPath,
             // pythonOptions: ["-u"],
-            // scriptPath: "path/to/my/scripts",
+            // need to explicitly specify script path to be cross-platform functional
+            scriptPath: pyScriptUri.fsPath,
             args: [`${workspaceUri}/${this.activeViewXModel}`, modelUri.fsPath, this.socketServerConfig.get("port")]
         };
 
-        let pyInterpreterUri = vscode.Uri.file(`${this.extensionPath}/out/python/viewx_interpreter.py`);
-
-        pythonShell.run(pyInterpreterUri.fsPath, options, function (err, results) {
+        pythonShell.run(pyScriptUri.fsPath, options, function (err, results) {
             // if (err) throw err;
             // results is an array consisting of messages collected during execution
             if (results && results.length > 0) {
@@ -283,6 +315,7 @@ class ViewXExtension {
                 }
                 else if((results[0] as string).trim() === "error") {
                     vscode.window.showErrorMessage(results[1] as string);
+                     positionCursor(getPositionFromTextXError(results[1]));
                 }
                 else {
                     vscode.window.showErrorMessage("Unexpected error!");
@@ -290,6 +323,26 @@ class ViewXExtension {
             }
         });
         this.lastPreviewedFileUri = modelUri;
+
+        function getPositionFromTextXError(error: string): vscode.Position {
+            let index: number = error.indexOf("at (");
+            let values: string[] = error.substring(index + 4, error.length-1).split(",");
+            let line: number = Number(values[0].trim());
+            let column: number = Number(values[1].trim());
+            return new vscode.Position(line, column);
+        }
+
+        function positionCursor(position: vscode.Position) {
+            vscode.window.visibleTextEditors.forEach(editor => {
+                // select only if previewed file is visible in some of the editors
+                if (editor.document.uri.path === this.lastPreviewedFileUri.path) {
+                    // reverse selection (cursor is at the beginning of the selection)
+                    vscode.window.visibleTextEditors[0].selection = new vscode.Selection(position, position);
+                    vscode.window.visibleTextEditors[0].revealRange(
+                        new vscode.Range(position, position), vscode.TextEditorRevealType.InCenter);
+                }
+            });
+        }
     }
 
     public openModelPreview(callback?: Function) {
@@ -309,7 +362,7 @@ class ViewXExtension {
                 callback();
             }
         }, (reason) => {
-                vscode.window.showErrorMessage(reason);
+            vscode.window.showErrorMessage(reason);
         });
     }
 
@@ -318,9 +371,9 @@ class ViewXExtension {
         const port = this.previewServerConfig.get("port") as number;
         const proxy = this.previewServerConfig.get("proxy") as string;
         const isSync = this.previewServerConfig.get("sync") as boolean;
-        // const rootPath = vscode.workspace.rootPath || Utility.getOpenFilePath(vscode.window.activeTextEditor.document.fileName);
+        // const rootPath = vscode.workspace.rootPath || Utility.getParentPath(vscode.window.activeTextEditor.document.fileName);
         // instead of workspace path, we now pass root path of the preview.html file (within extension root folder)
-        const rootPath = Utility.getOpenFilePath(Utility.getPreviewHtmlFilePath());
+        const rootPath = Utility.getParentPath(Utility.getPreviewHtmlFileUri().path);
         PreviewServer.start(rootPath, port, isSync, proxy);
     }
 

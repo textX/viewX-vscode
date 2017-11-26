@@ -18,21 +18,33 @@ if (Test-Path $path)
     else
     {
         Write-Host "
-        - Creating '$name' python virtual environment for viewX...
+         - Creating '$name' python virtual environment for viewX...
         "
         # set policy to unrestricted (admin access)
         Set-ExecutionPolicy Unrestricted -Scope CurrentUser
         # create python virtual environment
         virtualenv $venv
+
+        Write-Host "
+         - Adding 'viewXVEnv' environment variable...
+        "
         # create the environment variable
         setx viewXVEnv $venv
         # copy requirements file to the virtual environment
         Copy-Item $reqFile $venv
+        Write-Host "
+         - Installing python requirements...
+        "
         # this is the way to execute a script from specified path
         & "$venv\Scripts\pip" install -r "$venv\python_requirements.txt"
         Write-Host "
-        - Setup of viewX python virtual environment has been successfully finished!
-        - You can now open the Visual Studio Code and start using the viewX extension! 
+         - Creating the python symlink in the environment root folder...
+        "
+        cmd /c mklink "$venv\python.exe" "$venv\Scripts\python.exe"
+        
+        Write-Host "
+         - Setup of viewX python virtual environment has been successfully finished!
+         - You can now open the Visual Studio Code and start using the viewX extension! 
         "
     }
 }
