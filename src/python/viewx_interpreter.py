@@ -6,7 +6,7 @@ The graph is interactive and it's visualization is based on Cytoscape.js graph e
 """
 
 import sys
-import os
+from os.path import dirname, abspath, join
 from textx.metamodel import metamodel_from_file
 from textx.model import children_of_type
 from textx.exceptions import *
@@ -493,16 +493,16 @@ def build_path_from_import(view_model, _import):
     :return: absolute file system path of the import
     """
 
-    path = os.path.dirname(view_model)
+    path = dirname(view_model)
     _import = _import[1:-1] # remove ""
     if _import[0:2] == './':
         _import = _import[2:]
     subpaths = _import.split('/')
     for subpath in subpaths:
         if subpath == '..':
-            path = os.path.dirname(path)
+            path = dirname(path)
         else:
-            path = os.path.join(path, subpath)
+            path = join(path, subpath)
     return path
 
 
@@ -511,10 +511,10 @@ if __name__ == '__main__':
         print('Usage: python {} <view_model> <model> [<socketPort>]'.format(sys.argv[0]))
     else:
         try:
-            viewX_grammar_folder = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'grammar')
+            viewX_grammar_folder = join(dirname(dirname(dirname(abspath(__file__)))), 'grammar')
 
             # load viewX metamodel from grammar folder and create model
-            view_meta_model = metamodel_from_file(os.path.join(viewX_grammar_folder, 'viewX.tx'))
+            view_meta_model = metamodel_from_file(join(viewX_grammar_folder, 'viewX.tx'))
             view_model = view_meta_model.model_from_file(sys.argv[1])
 
             # create textX metamodel path based on viewX model import
@@ -530,7 +530,7 @@ if __name__ == '__main__':
             viewX_interpreter.interpret(target_model)
 
             # assign socket.io server port number
-            socket_port = sys.argv[3] if sys.argv.__len__() > 3 else '3002'
+            socket_port = sys.argv[3] if sys.argv.__len__() > 3 else '4000'
             preview_generator.generate(viewX_interpreter, socket_port)
             # print messages below are interpreted by viewX extension
             print('success')

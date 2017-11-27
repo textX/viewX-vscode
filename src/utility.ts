@@ -86,6 +86,22 @@ export class Utility {
             return path;
         }
     }
+
+    public static getPositionFromTextXError(error: string): vscode.Position {
+        let index: number = error.indexOf("at (");
+        let values: string[] = error.substring(index + 4, error.trim().length - 1).split(",");
+        let line: number = Number(values[0].trim());
+        let column: number = Number(values[1].trim());
+        // values are zero-based
+        return new vscode.Position(line - 1, column - 1);
+    }
+
+    public static getWordFromTextXError(error: string): string {
+        let start: number = error.indexOf("object \"");
+        let end: number = error.indexOf("\" of");
+        let word: string = error.substring(start + 8, end);
+        return word;
+    }
 }
 
 Utility.initialize();

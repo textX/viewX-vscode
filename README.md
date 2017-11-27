@@ -6,6 +6,15 @@
 
 A Visual Studio Code extension that allows graph based visualization of a code/model written in a DSL created using textX meta-language.
 
+---
+
+**IMPORTANT:** For 0.1.0 to 0.2.0 version migration (needed to be cross-platform functional):
+- Reinstall extension and follow the installation steps (or run the setup script) again  
+or
+- Update the extension and run only the step for creating the python symlink manually
+
+---
+
 ### This extension contains 3 main parts:
 
 - VS Code extension _(Typescript)_
@@ -27,7 +36,7 @@ A Visual Studio Code extension that allows graph based visualization of a code/m
     pip install virtualenv
 ```
 
-**IMPORTANT:** It is possible that you will have both Python 2.x and 3.x version installed. Check if you might need to use _**python3**_ and _**pip3**_ instead.
+**IMPORTANT:** It is possible that you will have both Python 2.x and 3.x version installed on UNIX system. It is OK to install virtualenv using ```pip``` (for Python 2.x) or just installing the package directly and making sure that ```virtualenv``` is added to the PATH. Just make sure that you have ```python3``` script added to the PATH and the script will create virtual environment for the Python 3.x version with pip and other tools automatically.
 
 ### 2) Install viewX extension:
 
@@ -39,9 +48,9 @@ A Visual Studio Code extension that allows graph based visualization of a code/m
 
 - Go to the VS Code extensions default installation directory
 - Open viewX extension directory and from _'setup_scripts'_ directory run a _'viewX_setup'_ script appropriate for your operating system. Parameters needed for the script are _-path_ (path for the environment to be created) and _-name_ (name of the virtual environment). Optionaly you can define _-reqFile_ (path to the requirements file), by default the python_requirements.txt file is been used from extension's root folder. Examples:
-    - Windows (Powershell) - _(default extension path: 'C:\Users\\\<username\>\\.vscode\extensions')_:
+    - Windows 10 (Powershell) - _(default extension path: 'C:\Users\\\<username\>\\.vscode\extensions')_:
 
-    Before running the Powershell script make sure first that developer mode is enabled by openning **_Settings -> Update & Security -> For developers_** and under **_Use developer features_** select **_Developer mode_**.  
+    **IMPORTANT:** Before running the Powershell script make sure first that developer mode is enabled by openning **_Settings -> Update & Security -> For developers_** and under **_Use developer features_** select **_Developer mode_**.  
     ```
         .\viewX_setup.ps1 -path "some\parent\folder" -name "env_name" [-reqFile "path\to\requirements\file"]
     ```
@@ -53,7 +62,7 @@ A Visual Studio Code extension that allows graph based visualization of a code/m
     ```
     Then execute the setup script:
     ```
-        ./viewX_setup.sh --path "some/parent/folder" --name "env_name" [--reqFile "path/to/requirements/file"]
+        ./viewX_setup.sh --path="some/parent/folder" --name="env_name" [--reqFile="path/to/requirements/file"]
     ```
 #### b) Manually:
 
@@ -62,7 +71,7 @@ A Visual Studio Code extension that allows graph based visualization of a code/m
 - Copy _python_requirements.txt_ file to the created Python virtual environment
 - Install Python dependencies by running following command in a console:
 
-    - Windows (Powershell):
+    - Windows 10 (Powershell):
     ```
         & $Env:viewXVEnv\Scripts\pip install -r $Env:viewXVEnv/python_requirements.txt
     ```
@@ -70,18 +79,18 @@ A Visual Studio Code extension that allows graph based visualization of a code/m
     ```
         $viewXVEnv/Scripts/pip install -r $viewXVEnv/python_requirements.txt
     ```
-- Create a **_python_** symlink in virtual environment's root folder pointing to python script (make sure it is 3.x version) within virtual environment (e.g. Windows: _python -> .\Scripts\python.exe_, Linux: _python -> ./bin/python3_)
+- Create a **_python_** symlink in virtual environment's root folder pointing to python script (make sure it is 3.x version) within virtual environment (e.g. Windows: _python -> .\Scripts\python.exe_, Linux: _python -> ./bin/python_)
 
-    - Windows (Powershell):
+    - Windows 10 (Powershell):
     
-    Open **_Settings -> Update & Security -> For developers_** and under **_Use developer features_** select **_Developer mode_**.  
+    **IMPORTANT:** Check first that developer mode is enabled by openning **_Settings -> Update & Security -> For developers_** and under **_Use developer features_** select **_Developer mode_**.  
     Then open Powershell and run following command:
     ```
         cmd /c mklink "$Env:viewXVEnv\python.exe" "$Env:viewXVEnv\Scripts\python.exe"
     ```
     - Linux / macOS:
     ```
-        sudo ln -sr "$VENV/bin/python3" "$VENV/python"
+        sudo ln -sr "$VENV/bin/python" "$VENV/python"
     ```
 
 ... and you're good to go! :)
@@ -137,6 +146,11 @@ Depending on the complexity of the textX model and the user's preferences, one c
 - For supported features and changesets by versions please check the [CHANGELOG.md](https://github.com/danielkupco/viewX-vscode/blob/master/CHANGELOG.md) file.
 
 - For grammar, syntax and features overview supported by viewX language please check the [documentation](https://danielkupco.github.io/viewX-vscode/).
+
+- Tested on the following operation systems:
+    - Windows 10 (x64)
+    - Linux - Ubuntu 16.04 (x64)
+    - Linux - ElementaryOS Freya (x64)
 
 ## License:
 

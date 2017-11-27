@@ -2,7 +2,7 @@
   "name": "viewx",
   "displayName": "viewX",
   "description": "Extension for visualizing code/model structure of DSL written using textX.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "homepage": "https://github.com/danielkupco/viewX-vscode",
   "icon": "images/vx.png",
   "galleryBanner": {
@@ -46,11 +46,6 @@
       "type": "object",
       "title": "viewXConfig",
       "properties": {
-        "viewX.fullExtensionName": {
-          "type": "string",
-          "default": "dkupco.viewx",
-          "description": "Full extension name."
-        },
         "viewX.previewFilePath": {
           "type": "string",
           "default": "/graph_preview/preview.html",
@@ -94,7 +89,7 @@
             "number",
             "null"
           ],
-          "default": 3002,
+          "default": 4000,
           "description": "Port number of the socket.io server."
         },
         "viewX.socketServer.usedPorts": {

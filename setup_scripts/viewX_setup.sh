@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 ############################
 # Author:
-# Daniel Kupco
+# Daniel Kupčo
 # 
 # Introduction:
 # A script for setting up the python virtual environment for viewX Visual Studio Code extension
@@ -21,7 +21,7 @@
 # flag arguments
 
 if [ $# = 0 ]; then
-	echo "No parameters has been set!"
+	echo "No arguments have been defined!"
 	echo "Please use -h or --help flags for additional information on how to use this script..."
 	exit 1
 fi
@@ -34,26 +34,27 @@ ECHO=false
 while test $# -gt 0; do
 	case "$1" in
 	    	-h|--help)
-			echo " Author: Daniel Kupco"
-			echo " "
-			echo " Introduction:"
-			echo " A script for setting up the python virtual environment for viewX Visual Studio Code extension"
-			echo " Manual:"
-			echo " Parameters needed for the script are -path (path for the environment to be created) and -name (name of the virtual environment)."
-			echo " Optionaly you can define -reqFile (path to the requirements file)."
-			echo " By default, it is assumed that script has been run from setup_scripts folder and the python_requirements.txt file from extension's root folder is been used."
-			echo " "
-			echo " Note: Paths can be absolute or relative. ~ sign cannot be used, use /home/<user> instead!"
-			echo " "
-			echo " Example:"
-			echo "./viewX_setup.sh --path \"some/parent/folder\" --name \"env_name\" [--reqFile \"path/to/requirements/file\"]"
-					echo " "
-	                echo "options:"
-	                echo "-h, --help                |  Show brief help."
-	                echo "-p, --path=PATH 	        |  Specify a path to the environment's root folder."
-	                echo "-n, --name=NAME           |  Specify a name for the virtual environment."
-	                echo "-r, --reqFile=PATH        |  Specify a path to the requirements file. By default the 'python_requirements.txt' file is been used from extension's root folder."
-	                echo "-e, --echo                |  Echo every step to console."
+			echo "- Author: Daniel Kupčo"
+			echo ""
+			echo "- Introduction:"
+			echo "	A script for setting up the python virtual environment for viewX Visual Studio Code extension"
+			echo "- Manual:"
+			echo "	Parameters needed for the script are --path (path for the environment to be created) and --name (name of the virtual environment)."
+			echo "	Optionaly you can define --reqFile (path to the requirements file)."
+			echo "	By default, it is assumed that script has been run from setup_scripts folder and the python_requirements.txt file from extension's root folder is been used."
+			echo ""
+			echo "- Note:"
+			echo "	Paths can be absolute or relative. ~ sign cannot be used, use /home/<user> instead!"
+			echo ""
+			echo "- Example:"
+			echo "	./viewX_setup.sh --path=\"some/parent/folder\" --name=\"env_name\" [--reqFile=\"path/to/requirements/file\"]"
+					echo ""
+	                echo "- Options:"
+	                echo "	-h, --help                |  Show brief help."
+        			echo "	-p, --path=PATH		  |  Specify a path to the environment's root folder."
+	                echo "	-n, --name=NAME           |  Specify a name for the virtual environment."
+	                echo "	-r, --reqFile=PATH        |  Specify a path to the requirements file. By default the 'python_requirements.txt' file is been used from extension's root folder."
+	                echo "	-e, --echo                |  Echo every step to console."
 	                exit 0
 	                ;;
 	        -p)
@@ -114,6 +115,17 @@ done
 if [ -z "$REQ" ]; then
 	REQ="./../python_requirements.txt"
 fi
+
+# fix PARENT path (remove trailing slash)
+if [ "${PARENT: -1}" = "/" ]; then
+	PARENT="${PARENT: : -1}"
+fi
+
+# fix NAME (remove trailing slash)
+if [ "${NAME: -1}" = "/" ]; then
+	NAME="${NAME: : -1}"
+fi
+
 VENVREQ="$PARENT/$NAME/python_requirements.txt"
 
 if [ $ECHO = true ]; then
@@ -134,7 +146,7 @@ if [ -d "$PARENT" ]; then
 		echo " - Creating '$NAME' python virtual environment for viewX..."
 		echo " "
 		# create python virtual environment
-		virtualenv $VENV
+		virtualenv --python=python3 $VENV
 		# create the environment variable
 		echo " "
 		echo " - Adding 'viewXVEnv' environment variable..."

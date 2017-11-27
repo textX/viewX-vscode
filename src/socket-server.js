@@ -1,3 +1,5 @@
+import { freemem } from 'os';
+
 /** 
  * Create socket.io server listening on provided port on localhost.
  * The server will separate the extension to one and preview clients to another room
@@ -70,7 +72,10 @@ function startSocketServer(port) {
     // this way we can react on success and use found port after everything is completed asynchronously 
 	return new Promise(function(resolve, reject) {
 		portscanner.findAPortNotInUse(port, function(error, freePort) {
-			if (freePort > -1) {
+            console.log("portscanner");
+            console.log(error);
+            console.log(freePort);
+            if (freePort > -1) {
 				http.listen(freePort, function(){
 					resolve(freePort);
 				});

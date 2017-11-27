@@ -4,7 +4,7 @@
         "name": "{{ projectName }}",
         "version": "0.1",
         "root": ".",
-        "socketPort": 3002
+        "socketPort": 4000
     },
     "viewXModels": {
         "root": ".",

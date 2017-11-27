@@ -48,13 +48,20 @@
                     ,{"selector": "node.event", "style": {"shape": "vee", "label": "data(label)", "color": "black", "font-size": 18, "font-style": "normal", "font-weight": "normal", "text-background-color": "white", "text-background-opacity": 1.0, "text-background-shape": "roundrectangle", "background-color": "black", "background-opacity": 0.0, "border-color": "white", "border-width": 0, "border-style": "solid", "border-opacity": 0.0}}
                     ,{"selector": "node.event-container", "style": {"shape": "rectangle", "label": "data(label)", "color": "black", "font-size": 21, "font-style": "italic", "font-weight": "bold", "text-background-color": "white", "text-background-opacity": 0.2, "text-background-shape": "rectangle", "text-outline-color": "white", "text-outline-width": 2, "text-outline-opacity": 1, "text-margin-x": 0, "text-margin-y": 25, "width": "label", "background-color": "white", "background-opacity": 0.4, "border-color": "black", "border-width": 4, "border-style": "solid", "border-opacity": 1, "padding": "35px"}}
                     ,{"selector": "node.event-container:selected", "style": {"shape": "rectangle", "label": "data(label)", "color": "red", "font-size": 21, "font-style": "italic", "font-weight": "bold", "background-color": "red", "background-opacity": 0.1, "border-color": "red", "border-width": 4, "border-style": "solid", "border-opacity": 1}}
-,                
-    // contained nodes when compound nodes selected
-    {"selector": "node:selected node"
-    , "style": {
-            "background-color": "red", "border-color": "red", "color": "red"
-        }
-    }
+,                
+
+    // contained nodes when compound nodes selected
+
+    {"selector": "node:selected node"
+
+    , "style": {
+
+            "background-color": "red", "border-color": "red", "color": "red"
+
+        }
+
+    }
+
 
             ],
             layout: {
@@ -77,7 +84,7 @@
         // timestamp of the last click event
         var lastClickTimeStamp = 0.00;
 		
-        const socket = io('http://localhost:3002');
+        const socket = io('http://localhost:4000');
         // join to preview room
         socket.emit("preview-room");
         cy.elements().on('click', (event) => {
@@ -98,7 +105,7 @@
         function interpretCommand(command) {
             if (command.startsWith("fit")) {
                 var filter = "";
-                var args = command.split("|").slice(1).forEach(arg => {
+                command.split("|").slice(1).forEach(arg => {
                     filter += "[" + arg + "]";
                 });
                 var padding = Math.min(window.screen.height, window.screen.width) / 4;
