@@ -15,7 +15,7 @@
 # Note: Paths can be absolute or relative. ~ sign cannot be used, use /home/<user> instead!
 #
 # Example:
-# ./viewX_setup.sh --path "some/parent/folder" --name "env_name" [--reqFile "path/to/requirements/file"]
+# ./viewX_setup.sh --path="some/parent/folder" --name="env_name" [--reqFile="path/to/requirements/file"]
 ############################
 #
 # flag arguments

@@ -6,7 +6,8 @@
   "homepage": "https://github.com/danielkupco/viewX-vscode",
   "icon": "images/vx.png",
   "galleryBanner": {
-    "theme": "dark"
+    "theme": "dark",
+    "color": "#333333"
   },
   "author": {
     "name": "Daniel Kupco",
@@ -22,6 +23,13 @@
   "bugs": {
     "url": "https://github.com/danielkupco/viewX-vscode/issues"
   },
+  "badges": [
+    {
+      "href": "https://img.shields.io/badge/vscode--textX--community-textX_tools-blue.svg?logo=github",
+      "url": "https://github.com/textX-tools",
+      "description": "Github development community for textX tools."
+    }
+  ],
   "engines": {
     "vscode": "^1.12.0"
   },

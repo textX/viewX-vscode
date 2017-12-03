@@ -1,14 +1,15 @@
-![viewX logo][logo]
-
 [![MIT licensed](https://img.shields.io/cocoapods/l/AFNetworking.svg)](https://raw.githubusercontent.com/danielkupco/viewX-vscode/master/LICENSE)
 [![Typescript version](https://img.shields.io/badge/typescript-2.5.3-blue.svg)](https://www.typescriptlang.org/)
 [![Python version](https://img.shields.io/badge/python-3.5-orange.svg)](https://www.python.org/)
+[![textX tools](https://img.shields.io/badge/textX--dev--community-textX_tools-brightgreen.svg?logo=github)](https://github.com/textX-tools)
+
+![viewX logo][logo]
 
 A Visual Studio Code extension that allows graph based visualization of a code/model written in a DSL created using textX meta-language.
 
 ---
 
-**IMPORTANT:** For 0.1.0 to 0.2.0 version migration (needed to be cross-platform functional):
+**IMPORTANT:** For 0.1 to 0.2 version migration (needed to be cross-platform functional):
 - Reinstall extension and follow the installation steps (or run the setup script) again  
 or
 - Update the extension and run only the step for creating the python symlink manually
