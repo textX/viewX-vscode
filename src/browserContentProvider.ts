@@ -1,15 +1,17 @@
 "use strict";
 
 import * as vscode from "vscode";
-import { Utility } from "./utility";
 
 export class BrowserContentProvider implements vscode.TextDocumentContentProvider {
     private _onDidChange = new vscode.EventEmitter<vscode.Uri>();
+    private uri: vscode.Uri;
+
+    constructor(uri: vscode.Uri) {
+        this.uri = uri;
+    }
 
     public provideTextDocumentContent() {
-        const editor = vscode.window.activeTextEditor;
-        const uri = Utility.getUriOfPreviewHtml();
-
+        // const editor = vscode.window.activeTextEditor;
         // if (editor.document.languageId !== "html") {
         //     return `
 		// 		<body>
@@ -18,7 +20,7 @@ export class BrowserContentProvider implements vscode.TextDocumentContentProvide
         // }
 
         return `<style>iframe { background-color: white } </style>
-                <iframe src="${uri}" frameBorder="0" width="100%" height="1000px" />`;
+                <iframe src="${this.uri}" frameBorder="0" width="100%" height="1000px" />`;
     }
 
     get onDidChange(): vscode.Event<vscode.Uri> {
@@ -26,6 +28,9 @@ export class BrowserContentProvider implements vscode.TextDocumentContentProvide
     }
 
     public update(uri: vscode.Uri) {
+        if (uri === undefined) {
+            uri = this.uri;
+        }
         this._onDidChange.fire(uri);
     }
 }

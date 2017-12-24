@@ -8,6 +8,7 @@ interface ProjectConfig {
     name: string;
     version: string;
     root: string;
+    previewServerPort: number;
     socketPort: number
 }
 

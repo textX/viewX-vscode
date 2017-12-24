@@ -9,8 +9,10 @@ export class PreviewServer {
         let bs: browserSync.BrowserSyncInstance;
         if (!browserSync.has(this.serverName)) {
             bs = browserSync.create(this.serverName);
+            console.log("BrowserSync created server: " + this.serverName);
         } else {
             bs = browserSync.get(this.serverName);
+            console.log("BrowserSync got server: " + this.serverName);
         }
 
         let options: browserSync.Options;
@@ -38,6 +40,8 @@ export class PreviewServer {
                 console.log(err);
                 bs.notify("Error is occured.");
             }
+            console.log("Browser Sync initialized");
+            console.log(options);
         });
     }
 

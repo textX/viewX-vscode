@@ -3,9 +3,9 @@ import * as vscode from "vscode";
 import { ViewXConfig } from "./viewXConfig"
 import { Utility } from "./utility";
 import { PreviewServer } from "./preview-server";
+import { BrowserContentProvider } from "./browserContentProvider";
 // import pythonShell module for executing python scripts
 import * as pythonShell from "python-shell"
-import { activate } from "./extension";
 
 export class ViewXExtension {
     // fixed values
@@ -15,6 +15,7 @@ export class ViewXExtension {
     public previewServerConfig: vscode.WorkspaceConfiguration;
     public socketServerConfig: vscode.WorkspaceConfiguration;
     public activeSocketPort: number;
+    public disposables: vscode.Disposable[];
 
     // changeable values
     public viewXProjectConfig: ViewXConfig;
@@ -22,12 +23,13 @@ export class ViewXExtension {
     public lastPreviewedFileUri: vscode.Uri;
     public isPreviewActive: boolean;
 
-    constructor(context: vscode.ExtensionContext) {
+    constructor(context: vscode.ExtensionContext, disposables: vscode.Disposable[]) {
         this.extensionConfig = vscode.workspace.getConfiguration("viewX");
         this.previewServerConfig = vscode.workspace.getConfiguration("viewX.previewServer");
         this.socketServerConfig = vscode.workspace.getConfiguration("viewX.socketServer");
         this.extensionPath = context.extensionPath;
         this.viewXVEnvPath = process.env[this.extensionConfig.get("envVariableName") as string];
+        this.disposables = disposables;
 
         // if workspace is loaded, read viewX project configuration file
         let workspacePath = vscode.workspace.rootPath;
@@ -61,6 +63,7 @@ export class ViewXExtension {
     }
 
     public generatePreviewHtmlForModelAsync(modelUri: vscode.Uri, callback?: Function) {
+        console.log("generatePreviewHtmlForModelAsync");
         let envPythonUri: vscode.Uri = vscode.Uri.file(`${this.viewXVEnvPath}/python`);
         let workspaceUri: string = vscode.workspace.rootPath;
         let pyScriptUri: vscode.Uri = vscode.Uri.file(`${this.extensionPath}/out/python`);
@@ -73,6 +76,8 @@ export class ViewXExtension {
             scriptPath: pyScriptUri.fsPath,
             args: [`${workspaceUri}/${this.activeViewXModel}`, modelUri.fsPath, this.socketServerConfig.get("port")]
         };
+        console.log("options:");
+        console.log(options);
 
         // this context is overriden within the scope below
         // here we save a reference to a this context
@@ -144,13 +149,51 @@ export class ViewXExtension {
 
     public startPreviewServer() {
         // Utility.setRandomPort();
-        const port = this.previewServerConfig.get("port") as number;
         const proxy = this.previewServerConfig.get("proxy") as string;
         const isSync = this.previewServerConfig.get("sync") as boolean;
-        // const rootPath = vscode.workspace.rootPath || Utility.getParentPath(vscode.window.activeTextEditor.document.fileName);
-        // instead of workspace path, we now pass root path of the preview.html file (within extension root folder)
-        const rootPath = Utility.getParentPath(Utility.getPreviewHtmlFileUri().path);
-        PreviewServer.start(rootPath, port, isSync, proxy);
+
+        // using socket port defined in viewX project config file
+        let previewServerPort: number = undefined;
+        if (this.viewXProjectConfig !== undefined) {
+            previewServerPort = this.viewXProjectConfig.project.previewServerPort;
+            console.log("Defined previewServerPort port: " + previewServerPort);
+        }
+        if (previewServerPort === undefined) {
+            previewServerPort = this.previewServerConfig.get("port") as number;
+            console.log("Overriding previewServerPort port: " + previewServerPort);
+        }
+
+        // get available port
+        Utility.getAvailablePortPromise(previewServerPort).then(availablePort => {
+            // update port
+            this.viewXProjectConfig.project.previewServerPort = availablePort;
+            console.log("Available port: " + availablePort);
+            // const rootPath = vscode.workspace.rootPath || Utility.getParentPath(vscode.window.activeTextEditor.document.fileName);
+            // instead of workspace path, we now pass root path of the preview.html file (within extension root folder)
+            // const rootPath = Utility.getParentPath(Utility.getPreviewHtmlFileUri().path);
+            const vxRootPath: vscode.Uri = vscode.Uri.file(`${vscode.workspace.rootPath}/.viewx`);
+            PreviewServer.start(vxRootPath.fsPath, availablePort, isSync, proxy);
+            // register BrowserContentProvider
+            let previewUri: vscode.Uri = vscode.Uri.parse(`http://localhost:${availablePort}/preview.html`);
+            console.log("Searching preview on: " + previewUri);
+            const provider = new BrowserContentProvider(previewUri);
+            const registration = vscode.workspace.registerTextDocumentContentProvider("http", provider);
+            this.disposables.push(registration);
+        });
+        // update port
+        // this.viewXProjectConfig.project.previewServerPort = previewServerPort;
+        // console.log("Available port: " + previewServerPort);
+        // // const rootPath = vscode.workspace.rootPath || Utility.getParentPath(vscode.window.activeTextEditor.document.fileName);
+        // // instead of workspace path, we now pass root path of the preview.html file (within extension root folder)
+        // // const rootPath = Utility.getParentPath(Utility.getPreviewHtmlFileUri().path);
+        // const vxRootPath: vscode.Uri = vscode.Uri.file(`${vscode.workspace.rootPath}/.viewx`);
+        // PreviewServer.start(vxRootPath.fsPath, previewServerPort, isSync, proxy);
+        // // register BrowserContentProvider
+        // let previewUri: vscode.Uri = vscode.Uri.parse(`http://localhost:${previewServerPort}/preview.html`);
+        // console.log("Searching preview on: " + previewUri);
+        // const provider = new BrowserContentProvider(previewUri);
+        // const registration = vscode.workspace.registerTextDocumentContentProvider("http", provider);
+        // this.disposables.push(registration);
     }
 
     public resumePreviewServer() {

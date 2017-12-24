@@ -5,7 +5,7 @@ import * as vscode from "vscode"
 // import pythonShell module for executing python scripts
 import * as pythonShell from "python-shell"
 // import modules for web server preview
-import { BrowserContentProvider } from "./browserContentProvider";
+// import { BrowserContentProvider } from "./browserContentProvider";
 import { PreviewServer } from "./preview-server";
 import { Utility } from "./utility";
 // import viewX configuration module
@@ -30,14 +30,14 @@ export function activate(context: vscode.ExtensionContext) {
     console.log(context);
 
     let disposables: vscode.Disposable[] = [];
-    viewXExtension = new ViewXExtension(context);
+    viewXExtension = new ViewXExtension(context, disposables);
     econtext = context;
 
     console.log("context");
     console.log(context.globalState.get("usedPorts"));
 
     startSocketServer(disposables);
-    registerBrowserProvider(disposables);
+    // registerBrowserProvider(disposables);
 
     // When configuration is changed, resume web server.
     vscode.workspace.onDidChangeConfiguration(() => {
@@ -144,6 +144,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     disposables.push(vscode.commands.registerCommand("viewx.previewModel", () => {
         let activeModelUri: vscode.Uri = vscode.window.activeTextEditor.document.uri;
+        console.log("viewx.previewModel");
+        console.log("active model uri: ");
+        console.log(activeModelUri);
         let fileName: string = Utility.getFileNameFromFileUriPath(activeModelUri.path);
         let viewXModel: string = viewXExtension.findMatchingViewXModel(fileName);
         if (viewXModel !== undefined) {
@@ -244,8 +247,8 @@ function startSocketServer(disposables: vscode.Disposable[]) {
 }
 
 // provider settings
-function registerBrowserProvider(disposables: vscode.Disposable[]) {
-    const provider = new BrowserContentProvider();
-    const registration = vscode.workspace.registerTextDocumentContentProvider("http", provider);
-    disposables.push(registration);
-}
+// function registerBrowserProvider(disposables: vscode.Disposable[]) {
+//     const provider = new BrowserContentProvider();
+//     const registration = vscode.workspace.registerTextDocumentContentProvider("http", provider);
+//     disposables.push(registration);
+// }

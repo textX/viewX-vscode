@@ -1,4 +1,6 @@
-import { freemem } from 'os';
+import { Utility } from './utility';
+
+// import { freemem } from 'os';
 
 /** 
  * Create socket.io server listening on provided port on localhost.
@@ -19,7 +21,7 @@ function startSocketServer(port) {
     // var corsOptions = {
     //     origin: 'http://localhost:*'
     // };
-    // io.set('origins', 'http://localhost:* localhost:*');
+    io.set('origins', 'http://localhost:* localhost:*');
     // app.use(cors(corsOptions));
     app.use(cors());
 
@@ -66,25 +68,7 @@ function startSocketServer(port) {
         }
     });
     
-    // import portscanner module to find first available port
-    var portscanner = require('portscanner');
-    // return a promise, if available port is found return it after server is started successfully
-    // this way we can react on success and use found port after everything is completed asynchronously 
-	return new Promise(function(resolve, reject) {
-		portscanner.findAPortNotInUse(port, function(error, freePort) {
-            console.log("portscanner");
-            console.log(error);
-            console.log(freePort);
-            if (freePort > -1) {
-				http.listen(freePort, function(){
-					resolve(freePort);
-				});
-			}
-			else {
-				reject(error);
-			}
-		});
-	});
+    return Utility.getAvailablePortPromise(port);
 }
 // export the method to enable code completion when imported in .ts
 exports.startSocketServer = startSocketServer;

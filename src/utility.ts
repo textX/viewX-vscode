@@ -2,18 +2,17 @@ import * as vscode from "vscode";
 
 export class Utility {
 
-    private static extensionConfig: vscode.WorkspaceConfiguration;
     private static serverConfig: vscode.WorkspaceConfiguration;
+    private static previewHtmlRelativePath: string = "/graph_preview/preview.html";
 
     public static initialize() {
-        Utility.extensionConfig = vscode.workspace.getConfiguration("viewX");
         Utility.serverConfig = vscode.workspace.getConfiguration("viewX.previewServer");
     }
 
     public static getUriOfPreviewHtml() {
         const port = Utility.serverConfig.get("port") as number;
         const proxy = Utility.serverConfig.get("proxy") as string;
-        let relativePath = Utility.getFileNameFromFileUriPath(Utility.extensionConfig.get("previewFilePath"));
+        let relativePath = Utility.getFileNameFromFileUriPath(Utility.previewHtmlRelativePath);
 
         // if (vscode.workspace.rootPath === undefined) {
         //     let paths = relativePath.split("/");
@@ -30,14 +29,13 @@ export class Utility {
     }
 
     public static getPreviewHtmlFileUri(): vscode.Uri {
-        const extensionPath = vscode.extensions.getExtension(Utility.extensionConfig.get("fullExtensionName") as string).extensionPath;
-        const previewFullPath = vscode.Uri.file(extensionPath + (Utility.extensionConfig.get("previewFilePath") as string));
+        const extensionPath = vscode.extensions.getExtension("dkupco.viewx").extensionPath;
+        const previewFullPath = vscode.Uri.file(extensionPath + Utility.previewHtmlRelativePath);
         return previewFullPath;
     }
 
     public static getPreviewHtmlRelativePath(): string {
-        const previewRelativePath = Utility.extensionConfig.get("previewFilePath") as string;
-        return previewRelativePath;
+        return Utility.previewHtmlRelativePath;
     }
 
     public static setRandomPort() {
@@ -101,6 +99,33 @@ export class Utility {
         let end: number = error.indexOf("\" of");
         let word: string = error.substring(start + 8, end);
         return word;
+    }
+
+    public static getAvailablePortPromise(port: number): Promise<number> {
+        // create express app
+        var app = require("express")();
+        // pass app to node.js server
+        var http = require("http").Server(app);
+        // import portscanner module to find first available port
+        var portscanner = require("portscanner");
+        // return a promise, if available port is found return it after server is started successfully
+        // this way we can react on success and use found port after everything is completed asynchronously
+        return new Promise(function(resolve, reject) {
+            portscanner.findAPortNotInUse(port, function(error, freePort: number) {
+                if (freePort > -1) {
+                    http.listen(freePort, function(){
+                        console.log("Listening on free port: " + freePort);
+                        http.close(() => {
+                            console.log("Closing the server on: " + freePort);
+                            resolve(freePort);
+                        });
+                    });
+                }
+                else {
+                    reject(error);
+                }
+            });
+        });
     }
 }
 
