@@ -52,7 +52,7 @@ def generate_viewx_project_files():
             output_file.write(rendered)
 
     # copy graph preview files
-    local_vx = join(OUTPUT_PATH, '.viewx')
+    local_vx = join(OUTPUT_PATH, 'vxproj')
     graph_preview = join(dirname(dirname(ROOT_PATH)), 'graph_preview')
     copytree(graph_preview, local_vx)
 

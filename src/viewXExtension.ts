@@ -7,15 +7,20 @@ import { BrowserContentProvider } from "./browserContentProvider";
 // import pythonShell module for executing python scripts
 import * as pythonShell from "python-shell"
 
+let vxProjDirName: string = "vxproj";
+let previewFileName: string = "preview.html";
+
 export class ViewXExtension {
     // fixed values
     public extensionPath: string;
     public viewXVEnvPath: string;
+    public workspacePath: string;
+    public projectName: string;
     public extensionConfig: vscode.WorkspaceConfiguration;
     public previewServerConfig: vscode.WorkspaceConfiguration;
     public socketServerConfig: vscode.WorkspaceConfiguration;
-    public activeSocketPort: number;
     public disposables: vscode.Disposable[];
+    public previewFileName: string;
 
     // changeable values
     public viewXProjectConfig: ViewXConfig;
@@ -30,15 +35,18 @@ export class ViewXExtension {
         this.extensionPath = context.extensionPath;
         this.viewXVEnvPath = process.env[this.extensionConfig.get("envVariableName") as string];
         this.disposables = disposables;
+        this.previewFileName = previewFileName;
 
         // if workspace is loaded, read viewX project configuration file
-        let workspacePath = vscode.workspace.rootPath;
-        if (workspacePath !== undefined) {
+        this.workspacePath = vscode.workspace.rootPath;
+        this.projectName = Utility.getFileNameFromFileUriPath(this.workspacePath);
+        if (this.workspacePath !== undefined) {
             // require external node module for loading json
             const loadJsonFile = require("load-json-file");
             try {
                 // need to read config file synchronously, because we can end up using it while it has not been read yet
-                this.viewXProjectConfig = loadJsonFile.sync(vscode.Uri.file(`${workspacePath}/vxconfig.json`).fsPath);
+                let configFile: vscode.Uri = vscode.Uri.file(`${this.workspacePath}/vxconfig.json`);
+                this.viewXProjectConfig = loadJsonFile.sync(configFile.fsPath);
                 // TODO: enable running multiple instances
                 // start browser sync server only if it is valid viewX project
                 this.startPreviewServer();
@@ -68,13 +76,16 @@ export class ViewXExtension {
         let workspaceUri: string = vscode.workspace.rootPath;
         let pyScriptUri: vscode.Uri = vscode.Uri.file(`${this.extensionPath}/out/python`);
         let scriptName: string = "viewx_interpreter.py";
+        // args
+        let activeModel: vscode.Uri = vscode.Uri.file(`${workspaceUri}/${this.activeViewXModel}`);
+        let vxPath: vscode.Uri = vscode.Uri.file(`${workspaceUri}/${vxProjDirName}`);
         let options = {
             mode: "text",
             pythonPath: envPythonUri.fsPath,
             // pythonOptions: ["-u"],
             // need to explicitly specify script path to be cross-platform functional
             scriptPath: pyScriptUri.fsPath,
-            args: [`${workspaceUri}/${this.activeViewXModel}`, modelUri.fsPath, this.socketServerConfig.get("port")]
+            args: [activeModel.fsPath, modelUri.fsPath, vxPath.fsPath, this.viewXProjectConfig.project.socketPort]
         };
         console.log("options:");
         console.log(options);
@@ -106,6 +117,7 @@ export class ViewXExtension {
     public handlePyShellResults(thisRef: any, results: string[], callback: Function) {
         if (results !== undefined) {
             if ((results[0] as string).trim() === "success") {
+                console.log("success intrprtr");
                 if (callback) {
                     callback();
                 }
@@ -136,7 +148,9 @@ export class ViewXExtension {
         }
         let fileToPreview: vscode.Uri = vscode.window.activeTextEditor.document.uri;
         // finally get URI of the preview file (hosted on web server) and show it
-        const previewUri = Utility.getUriOfPreviewHtml();
+        const previewUri = Utility.getUriOfPreviewHtml(this.viewXProjectConfig);
+        console.log("method openModelPreview:");
+        console.log("previewUri: " + previewUri);
         vscode.commands.executeCommand("vscode.previewHtml", previewUri, viewColumn, "viewX model preview").then(() => {
             this.isPreviewActive = true;
             if (callback) {
@@ -171,10 +185,11 @@ export class ViewXExtension {
             // const rootPath = vscode.workspace.rootPath || Utility.getParentPath(vscode.window.activeTextEditor.document.fileName);
             // instead of workspace path, we now pass root path of the preview.html file (within extension root folder)
             // const rootPath = Utility.getParentPath(Utility.getPreviewHtmlFileUri().path);
-            const vxRootPath: vscode.Uri = vscode.Uri.file(`${vscode.workspace.rootPath}/.viewx`);
-            PreviewServer.start(vxRootPath.fsPath, availablePort, isSync, proxy);
+            const vxRootPath: vscode.Uri = vscode.Uri.file(`${vscode.workspace.rootPath}/${vxProjDirName}`);
+            let serverName = Utility.getFileNameFromFileUriPath(vscode.workspace.rootPath);
+            PreviewServer.start(serverName, vxRootPath.fsPath, availablePort, isSync, proxy);
             // register BrowserContentProvider
-            let previewUri: vscode.Uri = vscode.Uri.parse(`http://localhost:${availablePort}/preview.html`);
+            let previewUri: vscode.Uri = vscode.Uri.parse(`http://localhost:${availablePort}/${previewFileName}`);
             console.log("Searching preview on: " + previewUri);
             const provider = new BrowserContentProvider(previewUri);
             const registration = vscode.workspace.registerTextDocumentContentProvider("http", provider);
@@ -189,7 +204,7 @@ export class ViewXExtension {
         // const vxRootPath: vscode.Uri = vscode.Uri.file(`${vscode.workspace.rootPath}/.viewx`);
         // PreviewServer.start(vxRootPath.fsPath, previewServerPort, isSync, proxy);
         // // register BrowserContentProvider
-        // let previewUri: vscode.Uri = vscode.Uri.parse(`http://localhost:${previewServerPort}/preview.html`);
+        // let previewUri: vscode.Uri = vscode.Uri.parse(`http://localhost:${previewServerPort}/${previewFileName}`);
         // console.log("Searching preview on: " + previewUri);
         // const provider = new BrowserContentProvider(previewUri);
         // const registration = vscode.workspace.registerTextDocumentContentProvider("http", provider);
@@ -197,8 +212,16 @@ export class ViewXExtension {
     }
 
     public resumePreviewServer() {
-        PreviewServer.stop();
-        this.startPreviewServer();
+        console.log("resume preview port...");
+        PreviewServer.stop(this.projectName);
+        // this.startPreviewServer();
+        const vxRootPath: vscode.Uri = vscode.Uri.file(`${vscode.workspace.rootPath}/${vxProjDirName}`);
+        const port = this.viewXProjectConfig.project.previewServerPort;
+        const proxy = this.previewServerConfig.get("proxy") as string;
+        const isSync = this.previewServerConfig.get("sync") as boolean;
+        console.log(vxRootPath.fsPath);
+        console.log(port);
+        PreviewServer.start(this.projectName, vxRootPath.fsPath, port, isSync, proxy);
     }
 
     public interpretCommand(command: string) {

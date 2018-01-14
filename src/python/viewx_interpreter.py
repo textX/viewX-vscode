@@ -507,11 +507,12 @@ def build_path_from_import(view_model, _import):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 3:  # the script expects at least 2 arguments (+1 implicit which is script name)
-        print('Usage: python {} <view_model> <model> [<socketPort>]'.format(sys.argv[0]))
+    if len(sys.argv) < 4:  # the script expects at least 3 arguments (+1 implicit which is script name)
+        print('Usage: python {} <view_model> <model> <output_dir> [<socketPort>]'.format(sys.argv[0]))
     else:
         try:
-            viewX_grammar_folder = join(dirname(dirname(dirname(abspath(__file__)))), 'grammar')
+            script_dir = dirname(abspath(__file__))
+            viewX_grammar_folder = join(dirname(dirname(script_dir)), 'grammar')
 
             # load viewX metamodel from grammar folder and create model
             view_meta_model = metamodel_from_file(join(viewX_grammar_folder, 'viewX.tx'))
@@ -529,9 +530,12 @@ if __name__ == '__main__':
             viewX_interpreter = ViewXInterpreter(view_model)
             viewX_interpreter.interpret(target_model)
 
+            # assign output directory path
+            output_dir = sys.argv[3] if sys.argv.__len__() > 3 else script_dir
+
             # assign socket.io server port number
-            socket_port = sys.argv[3] if sys.argv.__len__() > 3 else '4000'
-            preview_generator.generate(viewX_interpreter, socket_port)
+            socket_port = sys.argv[4] if sys.argv.__len__() > 4 else '4000'
+            preview_generator.generate(viewX_interpreter, output_dir, socket_port)
             # print messages below are interpreted by viewX extension
             print('success')
         except TextXSyntaxError as e:

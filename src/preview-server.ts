@@ -2,17 +2,18 @@ import * as browserSync from "browser-sync";
 
 export class PreviewServer {
 
-    private static serverName: string = "viewx-preview-server";
+    private static serverNamePrefix: string = "viewx-preview-";
 
-    public static start(rootPath: string, port: number, isSync: boolean, proxy = "") {
+    public static start(serverName: string, rootPath: string, port: number, isSync: boolean, proxy = "") {
+        let fullServerName = this.serverNamePrefix + serverName;
         // get browserSync instance.
         let bs: browserSync.BrowserSyncInstance;
-        if (!browserSync.has(this.serverName)) {
-            bs = browserSync.create(this.serverName);
-            console.log("BrowserSync created server: " + this.serverName);
+        if (!browserSync.has(fullServerName)) {
+            bs = browserSync.create(fullServerName);
+            console.log("BrowserSync created server: " + fullServerName);
         } else {
-            bs = browserSync.get(this.serverName);
-            console.log("BrowserSync got server: " + this.serverName);
+            bs = browserSync.get(fullServerName);
+            console.log("BrowserSync got server: " + fullServerName);
         }
 
         let options: browserSync.Options;
@@ -45,15 +46,17 @@ export class PreviewServer {
         });
     }
 
-    public static stop() {
-        if (browserSync.has(this.serverName)) {
-            browserSync.get(this.serverName).exit();
+    public static stop(serverName: string) {
+        let fullServerName = this.serverNamePrefix + serverName;
+        if (browserSync.has(fullServerName)) {
+            browserSync.get(fullServerName).exit();
         }
     }
 
-    public static reload(fileName: string) {
-        if (browserSync.has(this.serverName)) {
-            browserSync.get(this.serverName).reload(fileName);
+    public static reload(serverName: string, fileName: string) {
+        let fullServerName = this.serverNamePrefix + serverName;
+        if (browserSync.has(fullServerName)) {
+            browserSync.get(fullServerName).reload(fileName);
         }
     }
 }

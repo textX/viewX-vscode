@@ -54,7 +54,7 @@ export function activate(context: vscode.ExtensionContext) {
                 // re-generate preview html file when model file is saved (apply changes)
                 viewXExtension.generatePreviewHtmlForModelAsync(activeModelUri, () => {
                     // when file is saved, reload browser.
-                    viewXExtension.openModelPreview(() => { PreviewServer.reload("preview.html"); });
+                    viewXExtension.openModelPreview(() => { PreviewServer.reload(viewXExtension.projectName, viewXExtension.previewFileName); });
                 });
             }
         }
@@ -66,7 +66,7 @@ export function activate(context: vscode.ExtensionContext) {
         // it is good that close event is not fired while preview is visible (switched from another view column)
         // so when it is not visible we can set the flag and trigger preview showing again
         // since it will not create another tab if it is not actually closed, it will create new if it is
-        if (document !== undefined && document.isClosed && document.uri.path === "/preview.html") {
+        if (document !== undefined && document.isClosed && document.uri.path === `/${viewXExtension.previewFileName}`) {
             viewXExtension.isPreviewActive = false;
         }
     });
@@ -152,7 +152,7 @@ export function activate(context: vscode.ExtensionContext) {
         if (viewXModel !== undefined) {
             viewXExtension.generatePreviewHtmlForModelAsync(activeModelUri, () => {
                 viewXExtension.openModelPreview(() => {
-                    PreviewServer.reload("preview.html");
+                    PreviewServer.reload(viewXExtension.projectName, viewXExtension.previewFileName);
                 });
             });
         }
@@ -162,12 +162,12 @@ export function activate(context: vscode.ExtensionContext) {
     }));
 
     disposables.push(vscode.commands.registerCommand("viewx.launchBrowser", () => {
-        const uri = Utility.getUriOfPreviewHtml();
+        const uri = Utility.getUriOfPreviewHtml(viewXExtension.viewXProjectConfig);
         return vscode.commands.executeCommand("vscode.open", uri);
     }));
 
     disposables.push(vscode.commands.registerCommand("viewx.stopPreviewServer", () => {
-        PreviewServer.stop();
+        PreviewServer.stop(viewXExtension.projectName);
         vscode.window.showInformationMessage("Stop the PreviewServer successfully.");
     }));
 
@@ -178,7 +178,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     disposables.push(vscode.commands.registerCommand("viewx.showUsedPorts", () => {
         let usedPorts: Array<number> = viewXExtension.socketServerConfig.get("usedPorts") as Array<number>;
-        vscode.window.showInformationMessage(`Port used by this instance: ${viewXExtension.activeSocketPort}. Other ports taken by socket.io server are: ${usedPorts}`);
+        vscode.window.showInformationMessage(`Port used by this instance: ${viewXExtension.viewXProjectConfig.project.socketPort}. Other ports taken by socket.io server are: ${usedPorts}`);
     }));
 
     // subscribe all commands
@@ -193,7 +193,7 @@ export function deactivate() {
     // let usedPorts: Array<number> = viewXExtension.socketServerConfig.get("usedPorts") as Array<number>;
     let usedPorts: Array<number> = this.econtext.globalState.get("usedPorts");
     console.log(usedPorts);
-    PreviewServer.stop();
+    PreviewServer.stop(viewXExtension.projectName);
     // socket.emit("ext-send-command", "deactivate|end");
     console.log("deactivate|end");
 }
@@ -215,18 +215,20 @@ function startSocketServer(disposables: vscode.Disposable[]) {
 
     // start socket server asynchronously, promise is returned
     socketserver.startSocketServer(socketPort).then(function(usedPort) {
-        viewXExtension.activeSocketPort = usedPort;
+        let activeSocketPort = usedPort;
+        viewXExtension.viewXProjectConfig.project.socketPort = activeSocketPort;
         console.log("Using socket port: " + usedPort);
-        if (viewXExtension.activeSocketPort > -1 && !(usedPorts.indexOf(viewXExtension.activeSocketPort) > -1)) {
-            usedPorts.push(viewXExtension.activeSocketPort);
+        if (activeSocketPort > -1 && !(usedPorts.indexOf(activeSocketPort) > -1)) {
+            usedPorts.push(activeSocketPort);
             viewXExtension.socketServerConfig.update("usedPorts", usedPorts, true).then(() => {
                 console.log("Updating ports with: " + usedPorts);
             });
         }
 
+        console.log("connecting to socket server: " + `http://localhost:${activeSocketPort}`);
         // when port is determined for the socket server, we can connect to it and bind to an event
-        socket = io(`http://localhost:${viewXExtension.activeSocketPort}`);
-        socket.emit("ext-room", viewXExtension.socketServerConfig.get("debugMode") as boolean);
+        socket = io(`http://localhost:${activeSocketPort}`);
+        socket.emit("ext-room", true); //viewXExtension.socketServerConfig.get("debugMode") as boolean);
         socket.on("ext-receive-command", function(command) {
             console.log("extension received command: " + command);
             viewXExtension.interpretCommand(command);

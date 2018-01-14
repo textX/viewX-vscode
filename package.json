@@ -54,11 +54,6 @@
       "type": "object",
       "title": "viewXConfig",
       "properties": {
-        "viewX.previewFilePath": {
-          "type": "string",
-          "default": "/graph_preview/preview.html",
-          "description": "Relative path to preview html file."
-        },
         "viewX.envVariableName": {
           "type": "string",
           "default": "viewXVEnv",

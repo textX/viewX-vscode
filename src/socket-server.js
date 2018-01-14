@@ -21,13 +21,19 @@ function startSocketServer(port) {
     // var corsOptions = {
     //     origin: 'http://localhost:*'
     // };
-    io.set('origins', 'http://localhost:* localhost:*');
+    // io.set('origins', 'http://localhost:* localhost:*');
     // app.use(cors(corsOptions));
     app.use(cors());
 
     var debugMode = false;
     
+    console.log("starting socket server...");
+    console.log("debug: " + debugMode);
+    console.log("dirname: " + __dirname);
     io.on('connection', function(socket){
+        console.log("connection...");
+        // console.log(socket);
+
         // distribute sockets to rooms
         socket.on('ext-room', function(debug) {
             socket.join('extension');
@@ -68,7 +74,12 @@ function startSocketServer(port) {
         }
     });
     
-    return Utility.getAvailablePortPromise(port);
+    var promise = Utility.getAvailablePortPromise(port);
+    promise.then(function(availablePort) {
+        http.listen(availablePort);
+        console.log("socket listening on: " + availablePort);
+    });
+    return promise;
 }
 // export the method to enable code completion when imported in .ts
 exports.startSocketServer = startSocketServer;

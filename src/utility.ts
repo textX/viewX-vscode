@@ -1,41 +1,31 @@
 import * as vscode from "vscode";
+import { ViewXConfig } from "./viewXConfig";
 
 export class Utility {
 
     private static serverConfig: vscode.WorkspaceConfiguration;
-    private static previewHtmlRelativePath: string = "/graph_preview/preview.html";
+    private static previewHtmlFileName: string = "preview.html";
 
     public static initialize() {
         Utility.serverConfig = vscode.workspace.getConfiguration("viewX.previewServer");
     }
 
-    public static getUriOfPreviewHtml() {
-        const port = Utility.serverConfig.get("port") as number;
+    public static getUriOfPreviewHtml(viewXProjectConfig: ViewXConfig): vscode.Uri {
+        const port = viewXProjectConfig.project.previewServerPort;
         const proxy = Utility.serverConfig.get("proxy") as string;
-        let relativePath = Utility.getFileNameFromFileUriPath(Utility.previewHtmlRelativePath);
 
-        // if (vscode.workspace.rootPath === undefined) {
-        //     let paths = relativePath.split("/");
-        //     relativePath = paths[paths.length - 1];
-        // }
-
+        let previewUri: vscode.Uri;
         if (proxy === "") {
-            return vscode.Uri.parse(`http://localhost:${port}/${relativePath}`);
+            previewUri = vscode.Uri.parse(`http://localhost:${port}/${this.previewHtmlFileName}`);
         }
-
-        let uri = vscode.Uri.parse(`http://${proxy}`);
-        let host = uri.authority.split(":")[0];
-        return vscode.Uri.parse(`http://${host}:${port}/${uri.path}`);
-    }
-
-    public static getPreviewHtmlFileUri(): vscode.Uri {
-        const extensionPath = vscode.extensions.getExtension("dkupco.viewx").extensionPath;
-        const previewFullPath = vscode.Uri.file(extensionPath + Utility.previewHtmlRelativePath);
-        return previewFullPath;
-    }
-
-    public static getPreviewHtmlRelativePath(): string {
-        return Utility.previewHtmlRelativePath;
+        else {
+            let uri = vscode.Uri.parse(`http://${proxy}/${this.previewHtmlFileName}`);
+            let host = uri.authority.split(":")[0];
+            previewUri = vscode.Uri.parse(`http://${host}:${port}/${uri.path}`)
+        }
+        console.log("getUriOfPreviewHtml:");
+        console.log(previewUri);
+        return previewUri;
     }
 
     public static setRandomPort() {
@@ -77,11 +67,17 @@ export class Utility {
     }
 
     public static getFileNameFromFileUriPath(path: string): string {
-        if (path.indexOf("/") > -1) {
-            return path.substring(path.lastIndexOf("/") + 1);
+        let result = path;
+        // convert all \ to /
+        while(result.indexOf("\\") > -1) {
+            result = result.replace("\\", "/");
+        }
+
+        if (result.indexOf("/") > -1) {
+            return result.substring(result.lastIndexOf("/") + 1);
         }
         else {
-            return path;
+            return result;
         }
     }
 

@@ -1,7 +1,8 @@
 [![MIT licensed](https://img.shields.io/cocoapods/l/AFNetworking.svg)](https://raw.githubusercontent.com/danielkupco/viewX-vscode/master/LICENSE)
 [![Typescript version](https://img.shields.io/badge/typescript-2.5.3-blue.svg)](https://www.typescriptlang.org/)
 [![Python version](https://img.shields.io/badge/python-3.5-orange.svg)](https://www.python.org/)
-[![textX tools](https://img.shields.io/badge/textX--dev--community-textX_tools-brightgreen.svg?logo=github)](https://github.com/textX-tools)
+[![Marketplace](https://img.shields.io/badge/VSCode_Marketplace-viewX-e2165e.svg?)](https://marketplace.visualstudio.com/items?itemName=dkupco.viewX)
+[![textX tools](https://img.shields.io/badge/textX--dev--community-textX_tools-00823e.svg?logo=github)](https://github.com/textX-tools)
 
 ![viewX logo][logo]
 
@@ -148,7 +149,7 @@ Depending on the complexity of the textX model and the user's preferences, one c
 
 - For grammar, syntax and features overview supported by viewX language please check the [documentation](https://danielkupco.github.io/viewX-vscode/).
 
-- Tested on the following operation systems:
+- Tested on the following operating systems:
     - Windows 10 (x64)
     - Linux - Ubuntu 16.04 (x64)
     - Linux - ElementaryOS Freya (x64)
@@ -159,7 +160,7 @@ Author: _Daniel Kupčo_
 
 Licensed under the [MIT](https://raw.githubusercontent.com/danielkupco/viewX-vscode/master/LICENSE) license.
 
-All used libraries (not including all node modules), code parts and ideas used from other repositories are licensed by MIT license as well.
+All used libraries (not including all node modules), code parts and ideas used from other repositories are licensed under the MIT license as well.
 
 [logo]: https://raw.githubusercontent.com/danielkupco/viewX-vscode/master/images/viewX-logo.png "viewX logo"
 [demo]: https://raw.githubusercontent.com/danielkupco/viewX-vscode/master/images/demo-example.png "viewX logo"
