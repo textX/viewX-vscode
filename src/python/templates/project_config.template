@@ -2,7 +2,7 @@
     "project": {
         "type": "viewX",
         "name": "{{ projectName }}",
-        "version": "0.1",
+        "version": "0.2.1",
         "root": ".",
         "socketPort": 4000
     },

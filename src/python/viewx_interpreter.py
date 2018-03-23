@@ -516,11 +516,20 @@ if __name__ == '__main__':
 
             # load viewX metamodel from grammar folder and create model
             view_meta_model = metamodel_from_file(join(viewX_grammar_folder, 'viewX.tx'))
-            view_model = view_meta_model.model_from_file(sys.argv[1])
+            view_model_path = sys.argv[1]
+            view_model = view_meta_model.model_from_file(view_model_path)
+
+            # get view model name
+            parts = view_model_path.split('/') if view_model_path.__contains__('/') else view_model_path.split('\\')
+            view_model_name = parts[-1]
 
             # create textX metamodel path based on viewX model import
             metamodel_path = build_path_from_import(sys.argv[1], view_model.tx_import.path)
             model_path = sys.argv[2]
+            
+            # get model name
+            parts = model_path.split('/') if model_path.__contains__('/') else model_path.split('\\')
+            model_name = parts[-1]
 
             # load metamodel and create model
             target_metamodel = metamodel_from_file(metamodel_path)
@@ -535,7 +544,7 @@ if __name__ == '__main__':
 
             # assign socket.io server port number
             socket_port = sys.argv[4] if sys.argv.__len__() > 4 else '4000'
-            preview_generator.generate(viewX_interpreter, output_dir, socket_port)
+            preview_generator.generate(viewX_interpreter, output_dir, socket_port, model_name, view_model_name)
             # print messages below are interpreted by viewX extension
             print('success')
         except TextXSyntaxError as e:

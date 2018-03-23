@@ -5,7 +5,7 @@ import jinja2
 TEMPLATE_NAME = 'preview.template'
 TEMPLATE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates'))
 
-def generate(viewX_interpreter, output_dir, socket_port):
+def generate(viewX_interpreter, output_dir, socket_port, model_name, view_model_name):
     """
     Method that generates preview.html file with Cytoscape.js graph representation of interpreted textX model.
     :param viewX_interpreter: viewX interpreter which has all information necessary for preview.html file generation
@@ -23,8 +23,15 @@ def generate(viewX_interpreter, output_dir, socket_port):
 
     date = datetime.datetime.now().strftime('%d.%m.%Y. %H:%M:%S')
 
+    # get project name
+    parts = output_dir.split('/') if output_dir.__contains__('/') else output_dir.split('\\')
+    project_name = parts[-2]
+
     # render the template
     rendered = template.render({'date': date,
+                                'project_name': project_name,
+                                'model_name': model_name,
+                                'view_model_name': view_model_name,
                                 'view_model': viewX_interpreter.view_model,
                                 'model': viewX_interpreter.model,
                                 'socket_port': socket_port,
