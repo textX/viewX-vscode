@@ -8,7 +8,7 @@ import { Utility } from './utility';
  * and will distribute all commands comming from one room to another.
  * @param {Number} port
 */
-function startSocketServer(port) {
+function startSocketServer(projectDirectory, port) {
     // create express app
     var app = require('express')();
     // pass app to node.js server
@@ -28,8 +28,6 @@ function startSocketServer(port) {
     var debugMode = false;
     
     console.log("starting socket server...");
-    console.log("debug: " + debugMode);
-    console.log("dirname: " + __dirname);
     io.on('connection', function(socket){
         console.log("connection...");
         // console.log(socket);
@@ -38,9 +36,11 @@ function startSocketServer(port) {
         socket.on('ext-room', function(debug) {
             socket.join('extension');
             debugMode = debug;
+            console.log("extension room join: debug = " + debug);
             if(debugMode) {
                 app.get('/', function(req, res){
-                    res.sendFile(__dirname + '/test-socket.html');
+                    projectDirectory = projectDirectory.replace('\\', '/');
+                    res.sendFile(projectDirectory + '/vxproj/js/socket-debugger.html');
                 });
                 io.to('logroom').emit('chat message', 'extension room joined');
             }
@@ -74,10 +74,12 @@ function startSocketServer(port) {
         }
     });
     
-    var promise = Utility.getAvailablePortPromise(port);
+    var promise = Utility.getAvailablePortPromiseAsync(port);
     promise.then(function(availablePort) {
         http.listen(availablePort);
         console.log("socket listening on: " + availablePort);
+    }).catch(function(error) {
+        console.log("socket-server catch promise: " + error);
     });
     return promise;
 }

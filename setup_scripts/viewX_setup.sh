@@ -162,7 +162,7 @@ if [ -d "$PARENT" ]; then
 		echo " "
 		echo " - Creating python symlink in the environment root folder..."
 		# create symlink in root folder
-		sudo ln -sr "$VENV/bin/python" "$VENV/python"
+		sudo ln -srf "$VENV/bin/python" "$VENV/python"
 		echo " "
 		echo " - Setup of viewX python virtual environment has been successfully finished!"
 		echo " - You can now open the Visual Studio Code and start using the viewX extension!"

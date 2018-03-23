@@ -39,15 +39,14 @@ export class ViewXExtension {
 
         // if workspace is loaded, read viewX project configuration file
         this.workspacePath = vscode.workspace.rootPath;
-        this.projectName = Utility.getFileNameFromFileUriPath(this.workspacePath);
         if (this.workspacePath !== undefined) {
+            this.projectName = Utility.getFileNameFromFileUriPath(this.workspacePath);
             // require external node module for loading json
             const loadJsonFile = require("load-json-file");
             try {
                 // need to read config file synchronously, because we can end up using it while it has not been read yet
                 let configFile: vscode.Uri = vscode.Uri.file(`${this.workspacePath}/vxconfig.json`);
                 this.viewXProjectConfig = loadJsonFile.sync(configFile.fsPath);
-                // TODO: enable running multiple instances
                 // start browser sync server only if it is valid viewX project
                 this.startPreviewServer();
             // need to catch the error in order to continue activating the extension
@@ -55,7 +54,6 @@ export class ViewXExtension {
                 console.log(error);
             }
         }
-
     }
 
     public findMatchingViewXModel(fileName: string): string {
@@ -71,14 +69,13 @@ export class ViewXExtension {
     }
 
     public generatePreviewHtmlForModelAsync(modelUri: vscode.Uri, callback?: Function) {
-        console.log("generatePreviewHtmlForModelAsync");
         let envPythonUri: vscode.Uri = vscode.Uri.file(`${this.viewXVEnvPath}/python`);
-        let workspaceUri: string = vscode.workspace.rootPath;
+        let workspacePath: string = vscode.workspace.rootPath;
         let pyScriptUri: vscode.Uri = vscode.Uri.file(`${this.extensionPath}/out/python`);
         let scriptName: string = "viewx_interpreter.py";
         // args
-        let activeModel: vscode.Uri = vscode.Uri.file(`${workspaceUri}/${this.activeViewXModel}`);
-        let vxPath: vscode.Uri = vscode.Uri.file(`${workspaceUri}/${vxProjDirName}`);
+        let activeModel: vscode.Uri = vscode.Uri.file(`${workspacePath}/${this.activeViewXModel}`);
+        let vxPath: vscode.Uri = vscode.Uri.file(`${workspacePath}/${vxProjDirName}`);
         let options = {
             mode: "text",
             pythonPath: envPythonUri.fsPath,
@@ -87,8 +84,6 @@ export class ViewXExtension {
             scriptPath: pyScriptUri.fsPath,
             args: [activeModel.fsPath, modelUri.fsPath, vxPath.fsPath, this.viewXProjectConfig.project.socketPort]
         };
-        console.log("options:");
-        console.log(options);
 
         // this context is overriden within the scope below
         // here we save a reference to a this context
@@ -117,17 +112,16 @@ export class ViewXExtension {
     public handlePyShellResults(thisRef: any, results: string[], callback: Function) {
         if (results !== undefined) {
             if ((results[0] as string).trim() === "success") {
-                console.log("success intrprtr");
                 if (callback) {
                     callback();
                 }
             }
             else if((results[0] as string).trim() === "error") {
                 vscode.window.showErrorMessage(results[1] as string);
-                 let position: vscode.Position = Utility.getPositionFromTextXError(results[1]);
-                 let word: string = Utility.getWordFromTextXError(results[1]);
-                 // position the cursor to the position from error
-                 thisRef.positionCursorTo(position, word);
+                let position: vscode.Position = Utility.getPositionFromTextXError(results[1]);
+                let word: string = Utility.getWordFromTextXError(results[1]);
+                // position the cursor to the position from error
+                thisRef.positionCursorTo(position, word);
             }
             else {
                 vscode.window.showErrorMessage("Unexpected error!");
@@ -149,9 +143,7 @@ export class ViewXExtension {
         let fileToPreview: vscode.Uri = vscode.window.activeTextEditor.document.uri;
         // finally get URI of the preview file (hosted on web server) and show it
         const previewUri = Utility.getUriOfPreviewHtml(this.viewXProjectConfig);
-        console.log("method openModelPreview:");
-        console.log("previewUri: " + previewUri);
-        vscode.commands.executeCommand("vscode.previewHtml", previewUri, viewColumn, "viewX model preview").then(() => {
+        vscode.commands.executeCommand("vscode.previewHtml", previewUri, viewColumn, `${Utility.getFileNameFromFileUriPath(fileToPreview.path)} - viewX Preview`).then(() => {
             this.isPreviewActive = true;
             if (callback) {
                 callback();
@@ -162,65 +154,41 @@ export class ViewXExtension {
     }
 
     public startPreviewServer() {
-        // Utility.setRandomPort();
-        const proxy = this.previewServerConfig.get("proxy") as string;
-        const isSync = this.previewServerConfig.get("sync") as boolean;
-
         // using socket port defined in viewX project config file
         let previewServerPort: number = undefined;
         if (this.viewXProjectConfig !== undefined) {
             previewServerPort = this.viewXProjectConfig.project.previewServerPort;
-            console.log("Defined previewServerPort port: " + previewServerPort);
         }
         if (previewServerPort === undefined) {
             previewServerPort = this.previewServerConfig.get("port") as number;
-            console.log("Overriding previewServerPort port: " + previewServerPort);
         }
 
         // get available port
-        Utility.getAvailablePortPromise(previewServerPort).then(availablePort => {
-            // update port
+        Utility.getAvailablePortPromiseAsync(previewServerPort).then(availablePort => {
             this.viewXProjectConfig.project.previewServerPort = availablePort;
-            console.log("Available port: " + availablePort);
-            // const rootPath = vscode.workspace.rootPath || Utility.getParentPath(vscode.window.activeTextEditor.document.fileName);
-            // instead of workspace path, we now pass root path of the preview.html file (within extension root folder)
-            // const rootPath = Utility.getParentPath(Utility.getPreviewHtmlFileUri().path);
+
             const vxRootPath: vscode.Uri = vscode.Uri.file(`${vscode.workspace.rootPath}/${vxProjDirName}`);
             let serverName = Utility.getFileNameFromFileUriPath(vscode.workspace.rootPath);
+            const proxy = this.previewServerConfig.get("proxy") as string;
+            const isSync = this.previewServerConfig.get("sync") as boolean;
             PreviewServer.start(serverName, vxRootPath.fsPath, availablePort, isSync, proxy);
-            // register BrowserContentProvider
+
+            // register BrowserContentProvider (instance specific)
             let previewUri: vscode.Uri = vscode.Uri.parse(`http://localhost:${availablePort}/${previewFileName}`);
-            console.log("Searching preview on: " + previewUri);
             const provider = new BrowserContentProvider(previewUri);
             const registration = vscode.workspace.registerTextDocumentContentProvider("http", provider);
             this.disposables.push(registration);
+        }).catch(error => {
+            console.log("viewXExtension catch promise: " + error);
         });
-        // update port
-        // this.viewXProjectConfig.project.previewServerPort = previewServerPort;
-        // console.log("Available port: " + previewServerPort);
-        // // const rootPath = vscode.workspace.rootPath || Utility.getParentPath(vscode.window.activeTextEditor.document.fileName);
-        // // instead of workspace path, we now pass root path of the preview.html file (within extension root folder)
-        // // const rootPath = Utility.getParentPath(Utility.getPreviewHtmlFileUri().path);
-        // const vxRootPath: vscode.Uri = vscode.Uri.file(`${vscode.workspace.rootPath}/.viewx`);
-        // PreviewServer.start(vxRootPath.fsPath, previewServerPort, isSync, proxy);
-        // // register BrowserContentProvider
-        // let previewUri: vscode.Uri = vscode.Uri.parse(`http://localhost:${previewServerPort}/${previewFileName}`);
-        // console.log("Searching preview on: " + previewUri);
-        // const provider = new BrowserContentProvider(previewUri);
-        // const registration = vscode.workspace.registerTextDocumentContentProvider("http", provider);
-        // this.disposables.push(registration);
     }
 
     public resumePreviewServer() {
-        console.log("resume preview port...");
         PreviewServer.stop(this.projectName);
-        // this.startPreviewServer();
         const vxRootPath: vscode.Uri = vscode.Uri.file(`${vscode.workspace.rootPath}/${vxProjDirName}`);
         const port = this.viewXProjectConfig.project.previewServerPort;
         const proxy = this.previewServerConfig.get("proxy") as string;
         const isSync = this.previewServerConfig.get("sync") as boolean;
-        console.log(vxRootPath.fsPath);
-        console.log(port);
         PreviewServer.start(this.projectName, vxRootPath.fsPath, port, isSync, proxy);
     }
 
@@ -239,8 +207,7 @@ export class ViewXExtension {
                     let endPosition = editor.document.positionAt(offset_end);
                     // reverse selection (cursor is at the beginning of the selection)
                     editor.selection = new vscode.Selection(endPosition, startPosition);
-                    editor.revealRange(
-                        new vscode.Range(startPosition, endPosition), vscode.TextEditorRevealType.InCenter);
+                    editor.revealRange(new vscode.Range(startPosition, endPosition), vscode.TextEditorRevealType.InCenter);
                 }
             });
         }
@@ -255,8 +222,14 @@ export class ViewXExtension {
         if (word !== undefined) {
             length += word.length;
         }
+
+        // index of the first character (without leading whitespaces) is the indentation length
+        let line = activeEditor.document.lineAt(position.line).text;
+        let indentation = line.indexOf(line.trim()[0]);
         // select the word if defined
-        activeEditor.selection = new vscode.Selection(new vscode.Position(position.line, position.character + length), position);
+        let startPosition = new vscode.Position(position.line, indentation + position.character);
+        let endPosition = new vscode.Position(position.line, indentation + position.character + length);
+        activeEditor.selection = new vscode.Selection(startPosition, endPosition);
         activeEditor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenter);
     }
 

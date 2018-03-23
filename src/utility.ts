@@ -23,8 +23,6 @@ export class Utility {
             let host = uri.authority.split(":")[0];
             previewUri = vscode.Uri.parse(`http://${host}:${port}/${uri.path}`)
         }
-        console.log("getUriOfPreviewHtml:");
-        console.log(previewUri);
         return previewUri;
     }
 
@@ -97,7 +95,7 @@ export class Utility {
         return word;
     }
 
-    public static getAvailablePortPromise(port: number): Promise<number> {
+    public static getAvailablePortPromiseAsync(port: number): Promise<number> {
         // create express app
         var app = require("express")();
         // pass app to node.js server
@@ -110,14 +108,14 @@ export class Utility {
             portscanner.findAPortNotInUse(port, function(error, freePort: number) {
                 if (freePort > -1) {
                     http.listen(freePort, function(){
-                        console.log("Listening on free port: " + freePort);
                         http.close(() => {
-                            console.log("Closing the server on: " + freePort);
                             resolve(freePort);
                         });
                     });
                 }
                 else {
+                    console.log("getAvailablePortPromise rejected!!!");
+                    console.log(error);
                     reject(error);
                 }
             });
