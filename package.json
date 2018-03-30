@@ -2,7 +2,7 @@
   "name": "viewx",
   "displayName": "viewX",
   "description": "Extension for visualizing code/model structure of DSL written using textX.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "homepage": "https://github.com/danielkupco/viewX-vscode",
   "icon": "images/vx.png",
   "galleryBanner": {
@@ -95,14 +95,6 @@
           "default": 4000,
           "description": "Port number of the socket.io server."
         },
-        "viewX.socketServer.usedPorts": {
-          "type": "array",
-          "description": "Port number of the socket.io server.",
-          "items": {
-            "type": "number",
-            "title": "Port number"
-          }
-        },
         "viewX.socketServer.debugMode": {
           "type": "boolean",
           "default": true,
@@ -113,8 +105,7 @@
     "commands": [
       {
         "command": "viewx.initProject",
-        "title": "viewX: Initialize project",
-        "category": "viewX"
+        "title": "viewX: Initialize project"
       },
       {
         "command": "viewx.previewModel",
@@ -138,7 +129,11 @@
       },
       {
         "command": "viewx.showUsedPorts",
-        "title": "viewX: Show used ports by socket.io server"
+        "title": "viewX: Show used ports by this viewX extension instance"
+      },
+      {
+        "command": "viewx.generateSocketDebugger",
+        "title": "viewX: Generate socket debugger HTML page"
       }
     ],
     "keybindings": [
@@ -169,6 +164,10 @@
       {
         "command": "viewx.showUsedPorts",
         "key": "ctrl+alt+v u"
+      },
+      {
+        "command": "viewx.generateSocketDebugger",
+        "key": "ctrl+alt+v d"
       }
     ],
     "menus": {
@@ -184,6 +183,10 @@
           "command": "viewx.previewModel",
           "group": "group@2",
           "when": "config.viewX.canPreviewActiveDocument"
+        },
+        {
+          "command": "viewx.generateSocketDebugger",
+          "group": "group@3"
         }
       ],
       "editor/context": [
@@ -196,9 +199,35 @@
           "command": "viewx.fitDefinition",
           "group": "group@2",
           "when": "config.viewX.canPreviewActiveDocument && editorTextFocus"
+        },
+        {
+          "command": "viewx.generateSocketDebugger",
+          "group": "group@3"
         }
       ]
-    }
+    },
+    "languages": [
+			{
+				"id": "textx",
+				"aliases": [
+					"textx",
+					"textX"
+				],
+				"extensions": [
+					".tx"
+				]
+			},
+			{
+				"id": "viewx",
+				"aliases": [
+					"viewx",
+					"viewX"
+				],
+				"extensions": [
+					".vx"
+				]
+			}
+		]
   },
   "scripts": {
     "vscode:prepublish": "tsc -p ./ --allowJs && cpx \"src/**/*.{py,template,html}\" out",

@@ -11,9 +11,9 @@ A Visual Studio Code extension that allows graph based visualization of a code/m
 ---
 
 **IMPORTANT:** For 0.1 to 0.2 version migration (needed to be cross-platform functional):
-- Reinstall extension and follow the installation steps (or run the setup script) again  
+- Reinstall the extension and follow the installation steps (or run the setup script) again  
 or
-- Update the extension and run only the step for creating the python symlink manually
+- Update the extension and run only the step for creating the python symlink manually - [_3) b) last step_](#pysymlink)
 
 ---
 
@@ -38,7 +38,7 @@ or
     pip install virtualenv
 ```
 
-**IMPORTANT:** It is possible that you will have both Python 2.x and 3.x version installed on UNIX system. It is OK to install virtualenv using ```pip``` (for Python 2.x) or just installing the package directly and making sure that ```virtualenv``` is added to the PATH. Just make sure that you have ```python3``` script added to the PATH and the script will create virtual environment for the Python 3.x version with pip and other tools automatically.
+**IMPORTANT:** It is possible that you will have both Python 2.x and 3.x versions already installed on UNIX system. It is OK to install virtualenv using ```pip``` (for Python 2.x) or just installing the package directly and making sure that ```virtualenv``` is added to the PATH. Just make sure that you have ```python3``` script added to the PATH and the script will create virtual environment for the Python 3.x version with pip and other tools automatically.
 
 ### 2) Install viewX extension:
 
@@ -49,7 +49,7 @@ or
 #### a) Script:
 
 - Go to the VS Code extensions default installation directory
-- Open viewX extension directory and from _'setup_scripts'_ directory run a _'viewX_setup'_ script appropriate for your operating system. Parameters needed for the script are _-path_ (path for the environment to be created) and _-name_ (name of the virtual environment). Optionaly you can define _-reqFile_ (path to the requirements file), by default the python_requirements.txt file is been used from extension's root folder. Examples:
+- Open viewX extension directory and from _'setup_scripts'_ directory, run a _'viewX_setup'_ script appropriate for your operating system. Parameters needed for the script are _-path_ (path for the environment to be created) and _-name_ (name of the virtual environment). Optionaly you can define _-reqFile_ (path to the requirements file), by default the python_requirements.txt file is been used from extension's root folder. Examples:
     - Windows 10 (Powershell) - _(default extension path: 'C:\Users\\\<username\>\\.vscode\extensions')_:
 
     **IMPORTANT:** Before running the Powershell script make sure first that developer mode is enabled by openning **_Settings -> Update & Security -> For developers_** and under **_Use developer features_** select **_Developer mode_**.  
@@ -81,7 +81,7 @@ or
     ```
         $viewXVEnv/Scripts/pip install -r $viewXVEnv/python_requirements.txt
     ```
-- Create a **_python_** symlink in virtual environment's root folder pointing to python script (make sure it is 3.x version) within virtual environment (e.g. Windows: _python -> .\Scripts\python.exe_, Linux: _python -> ./bin/python_)
+- <a name="pysymlink"></a> Create a **_python_** symlink in virtual environment's root folder pointing to python script (make sure it is 3.x version) within virtual environment (e.g. Windows: _python -> .\Scripts\python.exe_, Linux: _python -> ./bin/python_)
 
     - Windows 10 (Powershell):
     
@@ -92,7 +92,7 @@ or
     ```
     - Linux / macOS:
     ```
-        sudo ln -sr "$VENV/bin/python" "$VENV/python"
+        sudo ln -srf "$viewXVEnv/bin/python" "$viewXVEnv/python"
     ```
 
 ... and you're good to go! :)
@@ -121,7 +121,7 @@ Using any of these two completely different examples results in a graph to be di
 
 Depending on the complexity of the textX model and the user's preferences, one can define viewX model in a way anywhere between these two examples.
 
-## Some of main used tools and libraries:
+## Some of the main tools and libraries used:
 
 - This extension is intended to provide useful features during development using textX framework, so it heavily depends on _**textX**_. TextX is a meta-language which allows user to create his own DSL language defined by textX grammar rules. For more information about textX please check [documentation](http://www.igordejanovic.net/textX/) or [GitHub repository](https://github.com/igordejanovic/textX).
 
@@ -158,9 +158,9 @@ Depending on the complexity of the textX model and the user's preferences, one c
 
 Author: _Daniel Kupčo_
 
-Licensed under the [MIT](https://raw.githubusercontent.com/danielkupco/viewX-vscode/master/LICENSE) license.
+Licensed under [MIT](https://raw.githubusercontent.com/danielkupco/viewX-vscode/master/LICENSE) license.
 
-All used libraries (not including all node modules), code parts and ideas used from other repositories are licensed under the MIT license as well.
+All referenced libraries , code parts and ideas used from other repositories are licensed under MIT license as well.
 
 [logo]: https://raw.githubusercontent.com/danielkupco/viewX-vscode/master/images/viewX-logo.png "viewX logo"
 [demo]: https://raw.githubusercontent.com/danielkupco/viewX-vscode/master/images/demo-example.png "viewX logo"
