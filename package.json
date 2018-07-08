@@ -34,8 +34,9 @@
     "vscode": "^1.12.0"
   },
   "categories": [
-    "Languages", "Other"
-  ],  
+    "Languages",
+    "Other"
+  ],
   "keywords": [
     "viewX",
     "textX",
@@ -207,33 +208,35 @@
       ]
     },
     "languages": [
-			{
-				"id": "textx",
-				"aliases": [
-					"textx",
-					"textX"
-				],
-				"extensions": [
-					".tx"
-				]
-			},
-			{
-				"id": "viewx",
-				"aliases": [
-					"viewx",
-					"viewX"
-				],
-				"extensions": [
-					".vx"
-				]
-			}
-		]
+      {
+        "id": "textx",
+        "aliases": [
+          "textx",
+          "textX"
+        ],
+        "extensions": [
+          ".tx"
+        ]
+      },
+      {
+        "id": "viewx",
+        "aliases": [
+          "viewx",
+          "viewX"
+        ],
+        "extensions": [
+          ".vx"
+        ]
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "tsc -p ./ --allowJs && cpx \"src/**/*.{py,template,html}\" out",
     "compile": "tsc -watch -p ./ --allowJs && cpx \"src/**/*.{py,template,html}\" out --watch",
     "postinstall": "node ./node_modules/vscode/bin/install",
-    "test": "node ./node_modules/vscode/bin/test"
+    "test": "node ./node_modules/vscode/bin/test",
+    "snyk-protect": "snyk protect",
+    "prepare": "npm run snyk-protect"
   },
   "dependencies": {
     "browser-sync": "^2.18.13",
@@ -244,7 +247,8 @@
     "socket.io": "^2.0.3",
     "portscanner": "^2.1.1",
     "typescript": "^2.5.3",
-    "vscode": "^1.1.5"
+    "vscode": "^1.1.5",
+    "snyk": "^1.88.2"
   },
   "devDependencies": {
     "@types/browser-sync": "^0.0.36",
@@ -256,5 +260,6 @@
     "tslint": "^5.7.0",
     "typescript": "^2.5.3",
     "vscode": "^1.1.5"
-  }
+  },
+  "snyk": true
 }
